@@ -2,56 +2,55 @@
 
 @layer base {
   :root {
-    --bg-cream: #F8F6F0;
-    --border-dark: #111111;
-    --accent-blue: #0066FF;
+    --bg-cream: #FAF9F6;
+    --bg-cream-alt: #F8F7F4;
+    --bg-surface: #FFFFFF;
+    --border-subtle: #E7E5E4; /* stone-200 */
+    --accent-blue: #2563EB;   /* blue-600 */
+    --accent-blue-dark: #1D4ED8; /* blue-700 */
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   }
 
   body {
-    background-color: #F8F6F0;
-    color: #111111;
+    background-color: #FAF9F6;
+    color: #1C1917;
     min-height: 100vh;
   }
 }
 
-.font-serif-editorial {
+.font-serif-editorial,
+.font-serif {
   font-family: "Playfair Display", "Newsreader", "Georgia", "Cambria", serif;
 }
 
-.font-mono-code {
+.font-mono-code,
+.font-mono {
   font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
-.shadow-brutal {
-  box-shadow: 3px 3px 0px 0px #000000;
+/* Modern soft shadows */
+.shadow-subtle {
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px 0 rgba(0, 0, 0, 0.03);
 }
 
-.shadow-brutal-lg {
-  box-shadow: 4px 4px 0px 0px #000000;
+.shadow-card {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
 }
 
-.shadow-brutal-sm {
-  box-shadow: 2px 2px 0px 0px #000000;
+.shadow-card-hover {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.07), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
 }
 
-.shadow-brutal-blue {
-  box-shadow: 4px 4px 0px 0px #0066FF;
-}
-
-.border-brutal {
-  border: 1px solid #111111;
-}
-
+/* Warm cream backgrounds */
 .bg-cream-page {
-  background-color: #F8F6F0;
-}
-
-.bg-cream-surface {
-  background-color: #FFFFFF;
+  background-color: #FAF9F6;
 }
 
 .bg-cream-card {
-  background-color: #F9F8F3;
+  background-color: #FFFFFF;
+}
+
+.bg-cream-tint {
+  background-color: #F8F7F4;
 }
 

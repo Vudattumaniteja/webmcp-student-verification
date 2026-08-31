@@ -1,4 +1,4 @@
-import { ArrowRight, Plus, HelpCircle } from 'lucide-react';
+import { ArrowRight, ShieldCheck, Zap, Lock, Sparkles } from 'lucide-react';
 
 export interface HeroBannerProps {
   offerCount?: number;
@@ -8,129 +8,122 @@ export interface HeroBannerProps {
 }
 
 export default function HeroBanner({
-  offerCount = 12,
-  universityCount = '4,200+',
+  offerCount = 8,
+  universityCount = 'Stanford, Harvard, Berkeley, MIT',
   onOpenVault,
   onRegistrarMatch,
 }: HeroBannerProps) {
   return (
-    <section className="relative w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 sm:pt-12 pb-8 overflow-hidden">
-      {/* Decorative Blueprint / Tower Line Illustration in Background */}
-      <div className="absolute right-0 top-0 w-96 h-96 opacity-25 pointer-events-none select-none hidden md:block">
-        <svg
-          viewBox="0 0 200 200"
-          className="w-full h-full text-blue-400 stroke-current"
-          fill="none"
-          strokeWidth="0.75"
-        >
-          <circle cx="100" cy="100" r="80" strokeDasharray="3 3" />
-          <circle cx="100" cy="100" r="55" />
-          <circle cx="100" cy="100" r="30" />
-          <line x1="100" y1="10" x2="100" y2="190" strokeDasharray="2 2" />
-          <line x1="10" y1="100" x2="190" y2="100" strokeDasharray="2 2" />
-          <polygon points="100,20 120,70 100,65 80,70" />
-          <line x1="100" y1="20" x2="100" y2="0" />
-        </svg>
-      </div>
-
-      {/* Main Hero Header */}
+    <section className="relative w-full max-w-7xl mx-auto pt-4 pb-6 overflow-hidden">
+      {/* Editorial Headline & Subtitle */}
       <div className="max-w-3xl mb-8">
-        <h1 className="font-serif-editorial text-4xl sm:text-6xl lg:text-7xl font-normal tracking-tight text-neutral-900 leading-[1.1] mb-4">
-          The <span className="text-[#0066FF] italic">Student Perks</span>
-          <br />
-          Directory.
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-[#2563EB] text-xs font-semibold uppercase tracking-wider mb-4">
+          <Sparkles className="w-3.5 h-3.5" />
+          <span>In-Browser WebMCP Student Verification</span>
+        </div>
+
+        <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl font-normal tracking-tight text-stone-900 leading-[1.12] mb-4">
+          Every Student Perk,{' '}
+          <span className="text-[#2563EB] font-serif italic">Instantly Verified.</span>
         </h1>
-        <p className="text-base sm:text-lg text-neutral-700 font-sans max-w-xl">
-          Browse verified student discounts agents and students can claim.
+
+        <p className="text-base sm:text-lg text-stone-600 font-sans leading-relaxed max-w-2xl">
+          Browse and claim educational discounts across AI tools, streaming, and cloud services. Your academic identity stays securely sandboxed in your browser.
         </p>
       </div>
 
-      {/* Brutalist Stats & Quick Actions Bar */}
-      <div className="w-full bg-white border border-black shadow-[4px_4px_0px_0px_#000000] grid grid-cols-1 md:grid-cols-12 divide-y md:divide-y-0 md:divide-x divide-black">
-        {/* Metric 1: Verified Offers */}
-        <div className="md:col-span-2 p-4 sm:p-5 flex flex-col justify-center">
-          <div className="font-serif-editorial text-3xl sm:text-4xl font-semibold text-neutral-900 tracking-tight">
-            {offerCount}
-          </div>
-          <div className="font-mono text-[10px] sm:text-[11px] text-neutral-500 uppercase tracking-wider mt-1">
-            VERIFIED OFFERS
-          </div>
-        </div>
-
-        {/* Metric 2: Accredited Universities */}
-        <div className="md:col-span-3 p-4 sm:p-5 flex flex-col justify-center">
-          <div className="font-serif-editorial text-3xl sm:text-4xl font-semibold text-neutral-900 tracking-tight">
-            {universityCount}
-          </div>
-          <div className="font-mono text-[10px] sm:text-[11px] text-neutral-500 uppercase tracking-wider mt-1">
-            ACCREDITED UNIVERSITIES
-          </div>
-        </div>
-
-        {/* Metric 3: Tool Mix Breakdown */}
-        <div className="md:col-span-4 p-4 sm:p-5 flex flex-col justify-center">
-          <div className="flex items-center gap-1 text-[11px] font-mono text-neutral-600 uppercase tracking-wider mb-2">
-            <span>TOOL MIX</span>
-            <HelpCircle className="w-3.5 h-3.5 text-neutral-400" />
-          </div>
-
-          {/* Segmented Bar */}
-          <div className="h-3.5 w-full bg-neutral-200 border border-black flex overflow-hidden">
-            <div className="bg-[#22c55e] h-full" style={{ width: '46%' }} title="Answer 46%" />
-            <div className="bg-[#f97316] h-full" style={{ width: '49%' }} title="Action 49%" />
-            <div className="bg-[#dc2626] h-full" style={{ width: '5%' }} title="Sensitive Action 5%" />
-          </div>
-
-          {/* Legend */}
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 text-[10px] font-mono text-neutral-600">
-            <span className="flex items-center gap-1">
-              <span className="w-2 h-2 bg-[#22c55e] inline-block" />
-              Answer 46%
+      {/* Modern Editorial Stats & Verification Badges Grid */}
+      <div className="w-full bg-white border border-stone-200 rounded-2xl shadow-sm p-5 sm:p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        {/* Metric 1: Verified Student Offers */}
+        <div className="flex flex-col justify-center">
+          <div className="flex items-center gap-2">
+            <span className="font-serif text-3xl sm:text-4xl font-bold text-stone-900 tracking-tight">
+              {offerCount}
             </span>
-            <span className="flex items-center gap-1">
-              <span className="w-2 h-2 bg-[#f97316] inline-block" />
-              Action 49%
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="w-2 h-2 bg-[#dc2626] inline-block" />
-              Sensitive Action 5%
+            <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-blue-50 text-[#2563EB] border border-blue-100">
+              Live
             </span>
           </div>
+          <div className="text-xs font-medium text-stone-700 mt-1.5">
+            Student Offers Available
+          </div>
+          <p className="text-[11px] text-stone-500 mt-0.5">
+            Spotify, OpenAI, AWS, Notion, GitHub & more
+          </p>
         </div>
 
-        {/* Metric 4 / CTA 1: Instant Registrar Match */}
-        <button
-          type="button"
-          onClick={onRegistrarMatch}
-          className="md:col-span-3 p-4 sm:p-5 bg-white hover:bg-neutral-50 transition-colors flex items-center justify-between text-left cursor-pointer group"
-        >
-          <div className="flex items-center gap-2.5">
-            <div className="w-6 h-6 rounded-full border border-black flex items-center justify-center text-xs font-mono text-black group-hover:bg-neutral-100">
-              <Plus className="w-3.5 h-3.5" />
+        {/* Metric 2: University Presets */}
+        <div className="flex flex-col justify-center border-t sm:border-t-0 sm:border-l border-stone-100 sm:pl-5">
+          <div className="flex items-center gap-2">
+            <span className="font-serif text-3xl sm:text-4xl font-bold text-stone-900 tracking-tight">
+              4
+            </span>
+            <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-100">
+              Accredited
+            </span>
+          </div>
+          <div className="text-xs font-medium text-stone-700 mt-1.5">
+            University Presets ({universityCount})
+          </div>
+          <p className="text-[11px] text-stone-500 mt-0.5">
+            Pre-loaded with test scenarios &amp; documents
+          </p>
+        </div>
+
+        {/* Metric 3: Zero-PII Security */}
+        <div className="flex flex-col justify-center border-t lg:border-t-0 lg:border-l border-stone-100 lg:pl-5">
+          <div className="flex items-center gap-2 text-stone-900 font-semibold text-sm">
+            <div className="h-7 w-7 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center justify-center">
+              <ShieldCheck className="h-4 w-4" />
             </div>
-            <div>
-              <div className="font-mono text-[9px] text-neutral-500 uppercase tracking-widest">
-                VERIFICATION BRIDGE
-              </div>
-              <div className="font-mono text-xs font-bold text-neutral-900 group-hover:text-[#0066FF] transition-colors">
-                Instant Registrar Match -&gt;
-              </div>
-            </div>
+            <span>Zero-PII Claim-Check Architecture</span>
           </div>
-        </button>
+          <p className="text-xs text-stone-600 mt-1.5 leading-snug">
+            Raw files never leak to third-party LLMs. Compact opaque handles keep data sandboxed.
+          </p>
+        </div>
+
+        {/* Metric 4: Instant Registrar Match CTA */}
+        <div className="flex flex-col justify-center border-t lg:border-t-0 lg:border-l border-stone-100 lg:pl-5">
+          <button
+            type="button"
+            onClick={onRegistrarMatch}
+            className="text-left group cursor-pointer"
+          >
+            <div className="flex items-center gap-2 text-stone-900 font-semibold text-sm group-hover:text-[#2563EB] transition-colors">
+              <div className="h-7 w-7 rounded-lg bg-blue-50 text-[#2563EB] border border-blue-200 flex items-center justify-center group-hover:scale-105 transition-transform">
+                <Zap className="h-4 w-4" />
+              </div>
+              <span>Instant Registrar Match Enabled</span>
+            </div>
+            <p className="text-xs text-stone-600 mt-1.5 group-hover:text-stone-900 transition-colors leading-snug">
+              Direct verification for partner domains (@mit.edu) without document uploads.
+            </p>
+          </button>
+        </div>
       </div>
 
-      {/* Additional Primary Blue CTA Action */}
-      <div className="mt-4 flex justify-end">
-        <button
-          type="button"
-          onClick={onOpenVault}
-          className="px-5 py-2.5 bg-[#0066FF] hover:bg-[#0052cc] text-white border border-black shadow-[3px_3px_0px_0px_#000000] font-mono text-xs sm:text-sm font-semibold tracking-wide flex items-center gap-2 cursor-pointer transition-transform active:translate-x-0.5 active:translate-y-0.5"
-        >
-          <span>Open Student Vault</span>
-          <ArrowRight className="w-4 h-4" />
-        </button>
+      {/* Action Bar */}
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2 text-xs font-mono text-stone-500">
+          <Lock className="w-3.5 h-3.5 text-emerald-600" />
+          <span>Client Sandbox • IndexedDB Protected</span>
+        </div>
+
+        <div className="flex items-center gap-3">
+          {onOpenVault && (
+            <button
+              type="button"
+              onClick={onOpenVault}
+              className="px-4 py-2 bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-xl shadow-sm hover:shadow-md font-medium text-xs sm:text-sm tracking-wide flex items-center gap-2 cursor-pointer transition-all active:scale-98"
+            >
+              <span>Open Student Vault</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          )}
+        </div>
       </div>
     </section>
   );
 }
+

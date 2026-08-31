@@ -9,6 +9,7 @@ import {
 import { StudentVault, globalVault } from '../services/vault';
 import { VerificationEngine, globalVerificationEngine } from '../services/verificationEngine';
 import VerificationWizardModal from './VerificationWizardModal';
+import HeroBanner from './HeroBanner';
 import {
   Search,
   CheckCircle2,
@@ -21,6 +22,16 @@ import {
   ChevronUp,
   Loader2,
   Lock,
+  Code2,
+  BookOpen,
+  Music,
+  Bot,
+  Play,
+  Cloud,
+  FileText,
+  Code,
+  PenTool,
+  Sparkle,
 } from 'lucide-react';
 
 interface MerchantShowcaseProps {
@@ -34,11 +45,10 @@ interface MerchantShowcaseProps {
 }
 
 const CATEGORY_TABS = [
-  'ALL',
-  'AI & DEV',
-  'MUSIC & STREAMING',
-  'CLOUD & INFRA',
-  'PRODUCTIVITY',
+  { id: 'ALL', label: 'All Offers' },
+  { id: 'AI_DEV', label: 'AI & Dev Tools' },
+  { id: 'MUSIC_STREAMING', label: 'Music & Streaming' },
+  { id: 'PRODUCTIVITY_CLOUD', label: 'Productivity & Cloud' },
 ];
 
 interface FAQItem {
@@ -48,24 +58,24 @@ interface FAQItem {
 
 const FAQS: FAQItem[] = [
   {
-    question: 'What is WebMCP Student Verification?',
+    question: 'How does zero-PII student verification work?',
     answer:
-      'WebMCP Student Verification is an in-browser zero-PII student discount protocol. It enables human students and autonomous AI agents to discover, verify, and claim exclusive higher-education student discounts directly through browser model context (document.modelContext) without leaking sensitive personal documents to third parties.',
+      'All student credentials, IDs, and enrollment documents are stored locally inside your browser sandbox (IndexedDB). When verifying an offer, the WebMCP vault issues opaque, short-lived claim-check handles (under 300 characters). External AI agents and merchants never receive your raw personal documents or unredacted PII.',
   },
   {
-    question: 'How does Zero-PII Vault verification work?',
+    question: 'What is Instant Registrar Match vs. Document Proof?',
     answer:
-      'All student identity credentials and document binary Blobs remain sandboxed locally inside your browser (IndexedDB). Agents and external sites only receive opaque, sanitized claim-check handles under 300 characters, verifying enrollment while maintaining complete data confidentiality.',
+      'Institutions supporting Instant Match (such as MIT) verify student enrollment automatically via official registrar domain matching (@mit.edu), immediately unlocking reward promo codes. Other universities (such as Stanford, Harvard, and UC Berkeley) use pre-signed cryptographic proof uploads (Student ID, Tuition Receipt, or Transcript).',
   },
   {
-    question: 'How is Instant Match different from Document Proof?',
+    question: 'How do autonomous AI agents discover and claim perks with WebMCP?',
     answer:
-      'Institutions supporting Instant Match (such as MIT) verify enrollment automatically via official registrar domain matching (@mit.edu), instantly unlocking reward promo codes. Other universities require uploading proof of enrollment (Student ID, Class Schedule, Tuition Receipt, or Transcript).',
+      'WebMCP registers structured verification tools directly on window.document.modelContext. In-browser AI agents query school search tools, retrieve student credentials with explicit human consent, and execute pre-signed verification streams without manual form filling.',
   },
   {
-    question: 'Can AI agents and crawlers read this directory programmatically?',
+    question: 'What happens if a student ID is expired or illegible?',
     answer:
-      'Yes! All tools (search_school, submit_student_verification, upload_vault_document, check_verification_status, list_vault_documents) are actively registered in document.modelContext according to the WebMCP standard.',
+      'Our autonomous verification engine detects rejection codes (such as EXPIRED_DOCUMENT or ILLEGIBLE_DOCUMENT) in real time and offers 1-click intelligent recovery remedies, automatically re-verifying with valid replacement assets like Tuition Receipts or Official Transcripts.',
   },
 ];
 
@@ -83,6 +93,7 @@ export default function MerchantShowcase({
   const [activeCategory, setActiveCategory] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [expandedFaqIndex, setExpandedFaqIndex] = useState<number | null>(null);
+  const [apiSnippetCopied, setApiSnippetCopied] = useState(false);
 
   // Verification Wizard Modal State
   const [activeWizardMerchant, setActiveWizardMerchant] = useState<MerchantPerk | null>(null);
@@ -122,39 +133,79 @@ export default function MerchantShowcase({
       onCodeCopied(merchant.id, merchant.rewardCode);
     }
     setTimeout(() => {
-      setCopiedCodeId(null);
-    }, 2000);
+      setCopiedCodeId(null), 2000;
+    });
   };
 
   const handleResetDirectory = () => {
     store.reset();
   };
 
-  // Category counts calculation
-  const getCategoryCount = (cat: string) => {
-    if (cat === 'ALL') return merchants.length;
-    return merchants.filter((m) => {
-      const c = m.category.toUpperCase();
-      if (cat === 'AI & DEV') return c.includes('AI') || c.includes('DEV') || c.includes('RESEARCH');
-      if (cat === 'MUSIC & STREAMING') return c.includes('MUSIC') || c.includes('STREAMING') || c.includes('AUDIO');
-      if (cat === 'CLOUD & INFRA') return c.includes('CLOUD') || c.includes('INFRA') || c.includes('DEVOPS');
-      if (cat === 'PRODUCTIVITY') return c.includes('PRODUCTIVITY');
-      return c === cat;
-    }).length;
+  // Helper for brand icons
+  const getBrandIcon = (merchant: MerchantPerk) => {
+    switch (merchant.logoIcon) {
+      case 'music':
+        return <Music className="h-5 w-5" />;
+      case 'bot':
+        return <Bot className="h-5 w-5" />;
+      case 'play':
+        return <Play className="h-5 w-5 fill-current" />;
+      case 'cloud':
+        return <Cloud className="h-5 w-5" />;
+      case 'file-text':
+        return <FileText className="h-5 w-5" />;
+      case 'code':
+        return <Code className="h-5 w-5" />;
+      case 'figma':
+        return <PenTool className="h-5 w-5" />;
+      case 'sparkles':
+        return <Sparkles className="h-5 w-5" />;
+      default:
+        return <Sparkle className="h-5 w-5" />;
+    }
+  };
+
+  // Helper for brand badge styling
+  const getBrandColorStyles = (merchant: MerchantPerk) => {
+    switch (merchant.accentColor) {
+      case 'green':
+      case 'emerald':
+        return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+      case 'rose':
+      case 'red':
+        return 'bg-rose-50 text-rose-700 border-rose-200';
+      case 'amber':
+      case 'orange':
+        return 'bg-amber-50 text-amber-700 border-amber-200';
+      case 'purple':
+        return 'bg-purple-50 text-purple-700 border-purple-200';
+      case 'indigo':
+      case 'teal':
+      case 'cyan':
+      case 'sky':
+        return 'bg-blue-50 text-blue-700 border-blue-200';
+      default:
+        return 'bg-stone-100 text-stone-700 border-stone-200';
+    }
+  };
+
+  // Category filter counts
+  const matchesCategoryFilter = (catId: string, merchantCategory: string) => {
+    const c = merchantCategory.toUpperCase();
+    if (catId === 'ALL') return true;
+    if (catId === 'AI_DEV') return c.includes('AI') || c.includes('DEV') || c.includes('RESEARCH');
+    if (catId === 'MUSIC_STREAMING') return c.includes('MUSIC') || c.includes('STREAMING') || c.includes('AUDIO');
+    if (catId === 'PRODUCTIVITY_CLOUD') return c.includes('PRODUCTIVITY') || c.includes('CLOUD') || c.includes('INFRA') || c.includes('DESIGN');
+    return false;
+  };
+
+  const getCategoryCount = (catId: string) => {
+    return merchants.filter((m) => matchesCategoryFilter(catId, m.category)).length;
   };
 
   // Filtered merchants
   const filteredMerchants = merchants.filter((m) => {
-    const normalizedCat = activeCategory.toUpperCase();
-    const mCat = m.category.toUpperCase();
-
-    const matchesCategory =
-      normalizedCat === 'ALL' ||
-      (normalizedCat === 'AI & DEV' && (mCat.includes('AI') || mCat.includes('DEV') || mCat.includes('RESEARCH'))) ||
-      (normalizedCat === 'MUSIC & STREAMING' && (mCat.includes('MUSIC') || mCat.includes('STREAMING') || mCat.includes('AUDIO'))) ||
-      (normalizedCat === 'CLOUD & INFRA' && (mCat.includes('CLOUD') || mCat.includes('INFRA') || mCat.includes('DEVOPS'))) ||
-      (normalizedCat === 'PRODUCTIVITY' && mCat.includes('PRODUCTIVITY')) ||
-      mCat === normalizedCat;
+    const matchesCat = matchesCategoryFilter(activeCategory, m.category);
 
     const query = searchQuery.trim().toLowerCase();
     const matchesSearch =
@@ -165,145 +216,109 @@ export default function MerchantShowcase({
       m.tagline.toLowerCase().includes(query) ||
       m.tags.some((t) => t.toLowerCase().includes(query));
 
-    return matchesCategory && matchesSearch;
+    return matchesCat && matchesSearch;
   });
 
-  const verifiedCount = merchants.filter((m) => m.status === 'APPROVED').length;
+  const handleCopyApiSnippet = () => {
+    const snippet = `// WebMCP In-Browser Student Verification Invocation
+const tools = await window.document.modelContext.getTools();
+const result = await window.document.modelContext.executeTool('submit_student_verification', {
+  studentName: 'Alex Chen',
+  schoolId: 'sch_stanford_002',
+  documentId: 'doc_stan_id_2026'
+});`;
+    navigator.clipboard?.writeText(snippet);
+    setApiSnippetCopied(true);
+    setTimeout(() => setApiSnippetCopied(false), 2000);
+  };
 
   return (
-    <div className="flex flex-col gap-8 w-full max-w-6xl mx-auto font-sans text-neutral-900 pb-16">
-      {/* Editorial Title Section */}
-      <div className="flex flex-col gap-2 pt-2">
-        <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl font-normal tracking-tight text-neutral-900 leading-tight">
-          The <span className="text-[#0284c7] font-serif italic">WebMCP</span> Directory.
-        </h1>
-        <p className="font-serif text-lg sm:text-xl text-neutral-600 font-light">
-          Browse verified student perks & websites agents can use.
-        </p>
-      </div>
+    <div className="flex flex-col gap-8 w-full max-w-7xl mx-auto font-sans text-stone-900 pb-16">
+      {/* Hero Banner with Editorial Headline & Badges */}
+      <HeroBanner
+        offerCount={merchants.length}
+        onOpenVault={onOpenVault}
+        onRegistrarMatch={() => {
+          const mit = merchants.find((m) => m.id === 'openai_chatgpt_plus') || merchants[0];
+          if (mit) handleOpenWizard(mit);
+        }}
+      />
 
-      {/* Hero Stats Card matching PNG */}
-      <div className="bg-white border-2 border-neutral-900 rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-5 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-5">
-        {/* Stat Counters */}
-        <div className="flex items-center gap-8 divide-x-2 divide-neutral-900 pr-2">
-          <div className="flex flex-col">
-            <span className="font-serif text-3xl sm:text-4xl font-bold text-neutral-900 leading-none">
-              {merchants.length}
-            </span>
-            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-neutral-500 mt-1">
-              VERIFIED PERKS
-            </span>
-          </div>
-
-          <div className="flex flex-col pl-8">
-            <span className="font-serif text-3xl sm:text-4xl font-bold text-neutral-900 leading-none">
-              {verifiedCount}
-            </span>
-            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-neutral-500 mt-1">
-              PERKS CLAIMED
-            </span>
-          </div>
+      {/* Search Bar & Category Filter Navigation */}
+      <div className="flex flex-col gap-4">
+        {/* Search Bar */}
+        <div className="relative w-full">
+          <Search className="h-4 w-4 text-stone-400 absolute left-4 top-1/2 -translate-y-1/2" />
+          <input
+            type="text"
+            placeholder="Search student discounts (Spotify, ChatGPT, YouTube, AWS, Notion...)"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full bg-white border border-stone-200 rounded-xl pl-11 pr-4 py-3 text-xs sm:text-sm text-stone-900 placeholder-stone-400 font-sans focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] shadow-sm transition-all"
+          />
         </div>
 
-        {/* Verification Mix Visual Progress */}
-        <div className="flex-1 max-w-xs flex flex-col gap-1 px-2">
-          <div className="flex items-center justify-between text-[11px] font-mono font-bold text-neutral-600">
-            <span>VERIFICATION MIX</span>
-            <span className="text-neutral-400">?</span>
-          </div>
-          <div className="w-full h-3 bg-neutral-200 border border-neutral-900 rounded-sm overflow-hidden flex">
-            <div className="bg-emerald-500 h-full w-[46%]" title="Instant Match 46%" />
-            <div className="bg-amber-500 h-full w-[49%]" title="Document Vault 49%" />
-            <div className="bg-rose-500 h-full w-[5%]" title="Recovery 5%" />
-          </div>
-          <div className="flex items-center gap-3 text-[10px] font-mono text-neutral-600">
-            <span className="flex items-center gap-1">
-              <span className="h-2 w-2 rounded-xs bg-emerald-500 inline-block" /> Instant 46%
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="h-2 w-2 rounded-xs bg-amber-500 inline-block" /> Vault 49%
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="h-2 w-2 rounded-xs bg-rose-500 inline-block" /> Recovery 5%
-            </span>
-          </div>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex items-center gap-2.5">
-          {onOpenVault && (
-            <button
-              type="button"
-              onClick={onOpenVault}
-              className="px-3.5 py-2 rounded-lg border-2 border-neutral-900 bg-[#FAF7F2] hover:bg-neutral-100 font-mono text-xs font-bold text-neutral-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition cursor-pointer flex items-center gap-1.5"
-            >
-              <span>STUDENT VAULT →</span>
-            </button>
-          )}
-
-          <button
-            type="button"
-            onClick={handleResetDirectory}
-            title="Reset directory statuses"
-            className="p-2 rounded-lg border-2 border-neutral-900 bg-white hover:bg-neutral-100 text-neutral-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition cursor-pointer"
-          >
-            <RotateCcw className="h-4 w-4" />
-          </button>
-        </div>
-      </div>
-
-      {/* Clean Search Bar matching PNG */}
-      <div className="relative w-full">
-        <Search className="h-4 w-4 text-neutral-500 absolute left-4 top-1/2 -translate-y-1/2" />
-        <input
-          type="text"
-          placeholder="Search sites, tools, or categories..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full bg-white border-2 border-neutral-900 rounded-xl pl-11 pr-4 py-3 text-xs sm:text-sm text-neutral-900 placeholder-neutral-400 font-sans focus:outline-none shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]"
-        />
-      </div>
-
-      {/* Category Count Filter Pills matching PNG */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-1">
-        <div className="flex flex-wrap items-center gap-2">
-          {CATEGORY_TABS.map((cat) => {
-            const count = getCategoryCount(cat);
-            const isActive = activeCategory === cat;
-            return (
-              <button
-                key={cat}
-                type="button"
-                onClick={() => setActiveCategory(cat)}
-                className={`px-3.5 py-1 rounded-full border border-neutral-900 text-xs font-mono font-medium transition cursor-pointer flex items-center gap-1.5 ${
-                  isActive
-                    ? 'bg-neutral-900 text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
-                    : 'bg-white hover:bg-neutral-100 text-neutral-900 shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]'
-                }`}
-              >
-                <span>{cat}</span>
-                <span
-                  className={`text-[10px] font-bold ${
-                    isActive ? 'text-amber-300' : 'text-neutral-500'
+        {/* Category Filter Pills & Reset Action */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-1">
+          <div className="flex flex-wrap items-center gap-2">
+            {CATEGORY_TABS.map((tab) => {
+              const count = getCategoryCount(tab.id);
+              const isActive = activeCategory === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveCategory(tab.id)}
+                  className={`px-3.5 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer flex items-center gap-2 ${
+                    isActive
+                      ? 'bg-[#2563EB] text-white shadow-sm shadow-blue-500/20 font-semibold'
+                      : 'bg-white hover:bg-stone-100 text-stone-700 border border-stone-200 shadow-xs'
                   }`}
                 >
-                  {count}
-                </span>
-              </button>
-            );
-          })}
-        </div>
+                  <span>{tab.label}</span>
+                  <span
+                    className={`text-[10px] font-bold px-1.5 py-0.2 rounded-full ${
+                      isActive ? 'bg-blue-700 text-white' : 'bg-stone-100 text-stone-500'
+                    }`}
+                  >
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
 
-        <span className="text-xs font-mono text-neutral-500 shrink-0">
-          {filteredMerchants.length} perks indexed
-        </span>
+          <div className="flex items-center gap-3 shrink-0 self-end sm:self-center">
+            <span className="text-xs font-mono text-stone-500">
+              {filteredMerchants.length} offers available
+            </span>
+            <button
+              type="button"
+              onClick={handleResetDirectory}
+              title="Reset perks status"
+              className="p-1.5 rounded-lg border border-stone-200 bg-white hover:bg-stone-50 text-stone-600 hover:text-stone-900 shadow-xs transition cursor-pointer"
+            >
+              <RotateCcw className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </div>
       </div>
 
-      {/* Perks Directory Table / Rows matching PNG */}
-      <div className="bg-white border-2 border-neutral-900 rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] divide-y divide-neutral-200 overflow-hidden">
+      {/* Student Perks Cards / Rows Showcase */}
+      <div className="bg-white border border-stone-200 rounded-2xl shadow-sm divide-y divide-stone-100 overflow-hidden">
         {filteredMerchants.length === 0 ? (
-          <div className="py-12 text-center text-neutral-500 text-sm font-mono">
-            No student perks found matching &quot;{searchQuery}&quot;.
+          <div className="py-16 text-center text-stone-500 text-sm font-sans">
+            <p>No student discounts found matching &quot;{searchQuery}&quot;.</p>
+            <button
+              type="button"
+              onClick={() => {
+                setSearchQuery('');
+                setActiveCategory('ALL');
+              }}
+              className="mt-3 text-xs font-semibold text-[#2563EB] hover:underline cursor-pointer"
+            >
+              Clear filters
+            </button>
           </div>
         ) : (
           filteredMerchants.map((merchant) => {
@@ -314,98 +329,102 @@ export default function MerchantShowcase({
             return (
               <div
                 key={merchant.id}
-                className="p-4 sm:p-5 hover:bg-[#FAF7F2] transition flex flex-col md:flex-row items-start md:items-center justify-between gap-4"
+                className="p-4 sm:p-5.5 hover:bg-[#FAF9F6]/60 transition-colors flex flex-col md:flex-row items-start md:items-center justify-between gap-4"
               >
-                {/* Left: Favicon & Domain */}
-                <div className="flex items-center gap-3.5 min-w-[200px] shrink-0">
-                  <div className="h-9 w-9 rounded-lg bg-neutral-900 text-white flex items-center justify-center font-bold text-xs shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] shrink-0">
-                    {merchant.brand[0]}
+                {/* Left: Brand Icon & Domain Identity */}
+                <div className="flex items-center gap-3.5 min-w-[210px] shrink-0">
+                  <div
+                    className={`h-11 w-11 rounded-xl border flex items-center justify-center font-bold text-sm shadow-xs shrink-0 ${getBrandColorStyles(
+                      merchant,
+                    )}`}
+                  >
+                    {getBrandIcon(merchant)}
                   </div>
 
                   <div className="flex flex-col">
                     <div className="flex items-center gap-1.5">
-                      <span className="font-mono text-xs sm:text-sm font-bold text-neutral-900">
+                      <span className="font-semibold text-xs sm:text-sm text-stone-900">
                         {merchant.domain || `${merchant.id}.com`}
                       </span>
                       <Lock className="h-3 w-3 text-emerald-600" />
                     </div>
-                    <span className="text-[11px] text-neutral-500 font-sans">
+                    <span className="text-xs text-stone-500 font-medium">
                       {merchant.name}
                     </span>
                   </div>
                 </div>
 
-                {/* Center-Left: Category Badge */}
+                {/* Center-Left: Category Tag */}
                 <div className="min-w-[130px] shrink-0 hidden lg:block">
-                  <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-neutral-100 border border-neutral-300 text-neutral-700">
+                  <span className="text-[10px] font-mono uppercase px-2.5 py-1 rounded-md bg-stone-100 border border-stone-200 text-stone-600 font-medium">
                     {merchant.category}
                   </span>
                 </div>
 
-                {/* Center: Offer Summary Description & Pricing */}
+                {/* Center: Offer Tagline & Pricing Comparison */}
                 <div className="flex-1 min-w-0 pr-2">
-                  <p className="text-xs sm:text-sm text-neutral-800 leading-snug font-sans font-medium line-clamp-2">
+                  <p className="text-xs sm:text-sm text-stone-800 leading-relaxed font-medium">
                     {merchant.tagline}
                   </p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="text-[11px] text-neutral-400 line-through font-mono">
+                  <div className="flex flex-wrap items-center gap-2 mt-1.5">
+                    <span className="text-[11px] text-stone-400 line-through font-mono">
                       {merchant.regularPrice}
                     </span>
                     <span className="text-xs font-mono font-bold text-emerald-700">
                       {merchant.studentPrice}
                     </span>
-                    <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-amber-100 text-amber-900 border border-amber-300 font-bold">
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200">
                       {merchant.discountValue}
                     </span>
                   </div>
                 </div>
 
-                {/* Right: Status Badge & Action Button */}
+                {/* Right: Verification Status Badge & Action Button */}
                 <div className="flex items-center gap-3 shrink-0 self-end md:self-center">
-                  {/* Status Badge */}
+                  {/* Status Badges */}
                   {isApproved && (
-                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-100 border border-emerald-800 text-emerald-900 flex items-center gap-1">
-                      <CheckCircle2 className="h-3 w-3 text-emerald-600" />
-                      <span>APPROVED</span>
+                    <span className="text-[11px] font-medium px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 flex items-center gap-1.5 shadow-xs">
+                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                      <span>Approved</span>
                     </span>
                   )}
 
                   {isVerifying && (
-                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-cyan-100 border border-cyan-800 text-cyan-900 flex items-center gap-1 animate-pulse">
-                      <Loader2 className="h-3 w-3 animate-spin text-cyan-600" />
-                      <span>VERIFYING</span>
+                    <span className="text-[11px] font-medium px-2.5 py-1 rounded-full bg-blue-50 border border-blue-200 text-[#2563EB] flex items-center gap-1.5 animate-pulse shadow-xs">
+                      <Loader2 className="h-3.5 w-3.5 animate-spin text-[#2563EB]" />
+                      <span>Verifying...</span>
                     </span>
                   )}
 
                   {isActionNeeded && (
-                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-rose-100 border border-rose-800 text-rose-900 flex items-center gap-1">
-                      <AlertTriangle className="h-3 w-3 text-rose-600" />
-                      <span>ACTION NEEDED</span>
+                    <span className="text-[11px] font-medium px-2.5 py-1 rounded-full bg-rose-50 border border-rose-200 text-rose-800 flex items-center gap-1.5 shadow-xs">
+                      <AlertTriangle className="h-3.5 w-3.5 text-rose-600" />
+                      <span>Action Needed</span>
                     </span>
                   )}
 
-                  {/* Unlocked Reward Box or Verify Button */}
+                  {/* Actions: Unlocked Promo Code vs Claim Button */}
                   {isApproved && merchant.rewardCode ? (
-                    <div className="flex items-center gap-1.5 bg-[#FAF7F2] border border-neutral-900 p-1.5 rounded-lg">
-                      <span className="font-mono text-xs font-bold text-neutral-900 px-2 select-all">
+                    <div className="flex items-center gap-1.5 bg-[#FAF9F6] border border-stone-200 p-1.5 rounded-xl shadow-xs">
+                      <span className="font-mono text-xs font-bold text-stone-900 px-2.5 select-all">
                         {merchant.rewardCode}
                       </span>
                       <button
                         type="button"
                         onClick={() => handleCopyCode(merchant)}
                         aria-label="Copy Code"
-                        className="p-1.5 bg-neutral-900 hover:bg-neutral-800 text-white rounded text-[11px] font-mono font-bold transition cursor-pointer flex items-center gap-1"
-                        title="Copy promo code"
+                        className="px-3 py-1.5 bg-stone-900 hover:bg-stone-800 text-white rounded-lg text-xs font-medium transition cursor-pointer flex items-center gap-1.5 shadow-xs"
+                        title="Copy promotional discount code"
                       >
                         {copiedCodeId === merchant.id ? (
                           <>
-                            <Check className="h-3 w-3 text-emerald-400" />
+                            <Check className="h-3.5 w-3.5 text-emerald-400" />
                             <span>Copied!</span>
                           </>
                         ) : (
                           <>
-                            <Copy className="h-3 w-3" />
-                            <span>Copy Code</span>
+                            <Copy className="h-3.5 w-3.5" />
+                            <span>Copy</span>
                           </>
                         )}
                       </button>
@@ -414,7 +433,7 @@ export default function MerchantShowcase({
                     <button
                       type="button"
                       onClick={() => handleOpenWizard(merchant)}
-                      className="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-500 text-white border border-neutral-900 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition cursor-pointer"
+                      className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-medium flex items-center gap-1.5 shadow-sm transition cursor-pointer"
                     >
                       <RotateCcw className="h-3.5 w-3.5" />
                       <span>Retry Verification</span>
@@ -423,10 +442,10 @@ export default function MerchantShowcase({
                     <button
                       type="button"
                       onClick={() => handleOpenWizard(merchant)}
-                      className="px-3.5 py-1.5 bg-white hover:bg-neutral-900 hover:text-white text-neutral-900 border border-neutral-900 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition cursor-pointer"
+                      className="px-4 py-2 bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-sm hover:shadow transition cursor-pointer active:scale-98"
                     >
-                      <Sparkles className="h-3.5 w-3.5 text-amber-500" />
-                      <span>Verify & Claim</span>
+                      <Sparkles className="h-3.5 w-3.5" />
+                      <span>Verify &amp; Claim</span>
                     </button>
                   )}
                 </div>
@@ -436,13 +455,23 @@ export default function MerchantShowcase({
         )}
       </div>
 
-      {/* Frequently Asked Section matching PNG */}
-      <div className="bg-white border-2 border-neutral-900 rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-6 sm:p-8 flex flex-col gap-4">
-        <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-neutral-500">
-          — FREQUENTLY ASKED
-        </span>
+      {/* Frequently Asked Section with Modern Editorial Styling */}
+      <div className="bg-white border border-stone-200 rounded-2xl shadow-sm p-6 sm:p-8 flex flex-col gap-5">
+        <div className="flex items-center gap-2">
+          <div className="h-7 w-7 rounded-lg bg-blue-50 text-[#2563EB] flex items-center justify-center">
+            <BookOpen className="h-4 w-4" />
+          </div>
+          <div>
+            <h2 className="font-serif text-lg sm:text-xl font-bold text-stone-900">
+              Frequently Asked Questions
+            </h2>
+            <p className="text-xs text-stone-500 mt-0.5">
+              Everything you need to know about WebMCP zero-PII student verification.
+            </p>
+          </div>
+        </div>
 
-        <div className="divide-y divide-neutral-200 border-t border-b border-neutral-200">
+        <div className="divide-y divide-stone-100 border-t border-b border-stone-100">
           {FAQS.map((faq, idx) => {
             const isExpanded = expandedFaqIndex === idx;
             return (
@@ -450,18 +479,18 @@ export default function MerchantShowcase({
                 <button
                   type="button"
                   onClick={() => setExpandedFaqIndex(isExpanded ? null : idx)}
-                  className="w-full flex items-center justify-between text-left font-serif text-base sm:text-lg font-medium text-neutral-900 hover:text-neutral-700 transition cursor-pointer"
+                  className="w-full flex items-center justify-between text-left font-serif text-base sm:text-lg font-medium text-stone-900 hover:text-[#2563EB] transition cursor-pointer"
                 >
                   <span>{faq.question}</span>
                   {isExpanded ? (
-                    <ChevronUp className="h-4 w-4 text-neutral-500 shrink-0" />
+                    <ChevronUp className="h-4 w-4 text-stone-500 shrink-0" />
                   ) : (
-                    <ChevronDown className="h-4 w-4 text-neutral-500 shrink-0" />
+                    <ChevronDown className="h-4 w-4 text-stone-500 shrink-0" />
                   )}
                 </button>
 
                 {isExpanded && (
-                  <p className="mt-3 text-xs sm:text-sm text-neutral-600 leading-relaxed font-sans animate-in fade-in duration-150">
+                  <p className="mt-3 text-xs sm:text-sm text-stone-600 leading-relaxed font-sans animate-in fade-in duration-150">
                     {faq.answer}
                   </p>
                 )}
@@ -471,49 +500,61 @@ export default function MerchantShowcase({
         </div>
       </div>
 
-      {/* For Agents API Section matching PNG */}
-      <div className="bg-white border-2 border-neutral-900 rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-6 sm:p-8 flex flex-col gap-4">
-        <div className="flex items-center justify-between">
-          <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-neutral-500">
-            — API FOR AGENTS
-          </span>
-          <span className="text-xs font-mono font-bold text-neutral-900 flex items-center gap-1 hover:underline cursor-pointer">
-            Full API docs ↗
-          </span>
+      {/* In-Browser WebMCP API for AI Agents Section */}
+      <div className="bg-white border border-stone-200 rounded-2xl shadow-sm p-6 sm:p-8 flex flex-col gap-4">
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <div className="flex items-center gap-2">
+            <div className="h-7 w-7 rounded-lg bg-purple-50 text-purple-700 flex items-center justify-center">
+              <Code2 className="h-4 w-4" />
+            </div>
+            <div>
+              <h2 className="font-serif text-lg sm:text-xl font-bold text-stone-900">
+                WebMCP Protocol for AI Agents
+              </h2>
+              <p className="text-xs text-stone-500 mt-0.5">
+                Automate student perk verification directly via <code className="font-mono text-[#2563EB]">document.modelContext</code>.
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleCopyApiSnippet}
+            className="px-3 py-1.5 rounded-lg border border-stone-200 bg-[#FAF9F6] hover:bg-stone-100 text-xs font-mono text-stone-800 flex items-center gap-1.5 transition cursor-pointer shadow-xs"
+          >
+            {apiSnippetCopied ? (
+              <>
+                <Check className="h-3.5 w-3.5 text-emerald-600" />
+                <span>Copied Code</span>
+              </>
+            ) : (
+              <>
+                <Copy className="h-3.5 w-3.5 text-stone-500" />
+                <span>Copy WebMCP Example</span>
+              </>
+            )}
+          </button>
         </div>
 
-        <p className="text-xs sm:text-sm text-neutral-700 leading-relaxed font-sans">
-          Query the directory programmatically — list perks, inspect each tool&apos;s input schema, probe student vault with <code className="font-mono text-emerald-800 bg-emerald-50 px-1 py-0.5 rounded">list_vault_documents</code>, or execute autonomous verification. Read-only discovery with zero PII leakage.
+        <p className="text-xs sm:text-sm text-stone-700 leading-relaxed font-sans">
+          All 7 WebMCP tools (<code className="font-mono text-xs bg-stone-100 px-1 py-0.5 rounded text-stone-800">search_school</code>, <code className="font-mono text-xs bg-stone-100 px-1 py-0.5 rounded text-stone-800">submit_student_verification</code>, <code className="font-mono text-xs bg-stone-100 px-1 py-0.5 rounded text-stone-800">upload_vault_document</code>, <code className="font-mono text-xs bg-stone-100 px-1 py-0.5 rounded text-stone-800">check_verification_status</code>, <code className="font-mono text-xs bg-stone-100 px-1 py-0.5 rounded text-stone-800">list_vault_documents</code>) are actively registered on the browser model context with strict JSON schemas.
         </p>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
-          <div className="p-3 bg-[#FAF7F2] border border-neutral-900 rounded-lg flex items-center justify-between text-xs font-mono">
-            <span className="font-bold text-neutral-900">GET /api/v1/lookup?url=...</span>
-            <span className="text-neutral-500 text-[11px]">Does this site have student discount? ↗</span>
-          </div>
-
-          <div className="p-3 bg-[#FAF7F2] border border-neutral-900 rounded-lg flex items-center justify-between text-xs font-mono">
-            <span className="font-bold text-neutral-900">GET /api/v1/perks?type=live</span>
-            <span className="text-neutral-500 text-[11px]">List live WebMCP perks ↗</span>
-          </div>
-
-          <div className="p-3 bg-[#FAF7F2] border border-neutral-900 rounded-lg flex items-center justify-between text-xs font-mono">
-            <span className="font-bold text-neutral-900">GET /api/v1/vault/documents</span>
-            <span className="text-neutral-500 text-[11px]">Inspect sanitized vault handles ↗</span>
-          </div>
-
-          <div className="p-3 bg-[#FAF7F2] border border-neutral-900 rounded-lg flex items-center justify-between text-xs font-mono">
-            <span className="font-bold text-neutral-900">GET /api/v1/stats</span>
-            <span className="text-neutral-500 text-[11px]">Directory-wide counts ↗</span>
-          </div>
-        </div>
-
-        <div className="pt-2 text-[11px] font-mono text-neutral-500">
-          OpenAPI 3.1 spec at <code className="text-neutral-800">/api/openapi.json</code> • full reference at <code className="text-neutral-800">/api-docs</code>
-        </div>
+        {/* Code Snippet Box */}
+        <pre className="p-4 bg-stone-900 text-stone-100 rounded-xl font-mono text-xs leading-relaxed overflow-x-auto border border-stone-800 shadow-inner">
+          <code>{`// In-Browser Autonomous Agent Invocation
+const tools = await document.modelContext.getTools();
+const res = await document.modelContext.executeTool('submit_student_verification', {
+  schoolId: 'sch_stanford_002',
+  firstName: 'Alex',
+  lastName: 'Chen',
+  email: 'alex.chen@stanford.edu',
+  merchantId: 'spotify_premium'
+});`}</code>
+        </pre>
       </div>
 
-      {/* Authentic Multi-Step Verification Modal */}
+      {/* Multi-Step Verification Wizard Modal */}
       {activeWizardMerchant && (
         <VerificationWizardModal
           merchant={activeWizardMerchant}
@@ -527,3 +568,4 @@ export default function MerchantShowcase({
     </div>
   );
 }
+

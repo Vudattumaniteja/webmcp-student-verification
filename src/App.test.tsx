@@ -17,10 +17,11 @@ describe('WebMCP Student Verification App', () => {
   it('renders application header and editorial navigation links', async () => {
     render(<App />);
     await waitFor(() => {
-      expect(screen.getByText('WEBMCP.COM')).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: '/directory' })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: '/vault' })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: '/agent' })).toBeInTheDocument();
+      expect(screen.getAllByText(/WebMCP/i).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/Student Perks/i).length).toBeGreaterThan(0);
+      expect(screen.getByRole('button', { name: /^Perks Directory$/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /^Student Vault$/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /^AI Agent Workspace$/i })).toBeInTheDocument();
     });
   });
 
@@ -35,7 +36,7 @@ describe('WebMCP Student Verification App', () => {
   it('renders perks directory by default matching editorial aesthetic', async () => {
     render(<App />);
     await waitFor(() => {
-      expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/The WebMCP Directory/i);
+      expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/Every Student Perk, Instantly Verified\./i);
       expect(screen.getByText(/spotify\.com/i)).toBeInTheDocument();
       expect(screen.getByText(/openai\.com/i)).toBeInTheDocument();
     });
@@ -43,7 +44,7 @@ describe('WebMCP Student Verification App', () => {
 
   it('switches to student vault tab and renders vault presets and documents', async () => {
     render(<App />);
-    const vaultNavBtn = screen.getByRole('button', { name: '/vault' });
+    const vaultNavBtn = screen.getByRole('button', { name: /^Student Vault$/i });
     fireEvent.click(vaultNavBtn);
 
     await waitFor(() => {
@@ -54,7 +55,7 @@ describe('WebMCP Student Verification App', () => {
 
   it('switches to verification agent tab and renders agent workspace', async () => {
     render(<App />);
-    const agentNavBtn = screen.getByRole('button', { name: '/agent' });
+    const agentNavBtn = screen.getByRole('button', { name: /^AI Agent Workspace$/i });
     fireEvent.click(agentNavBtn);
 
     await waitFor(() => {
@@ -81,3 +82,4 @@ describe('WebMCP Student Verification App', () => {
     expect(screen.queryByText(/Real-Time Activity Feed/i)).not.toBeInTheDocument();
   });
 });
+

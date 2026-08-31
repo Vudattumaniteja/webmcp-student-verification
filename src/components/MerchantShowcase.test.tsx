@@ -16,13 +16,13 @@ describe('MerchantShowcase Component', () => {
     });
   });
 
-  it('renders editorial directory header, stats card, and merchant directory rows', () => {
+  it('renders editorial directory header, hero banner stats, and student perks rows', () => {
     render(<MerchantShowcase store={store} />);
 
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/The WebMCP Directory/i);
-    expect(screen.getByText(/Browse verified student perks & websites agents can use\./i)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/Every Student Perk, Instantly Verified\./i);
+    expect(screen.getByText(/Browse and claim educational discounts across AI tools/i)).toBeInTheDocument();
 
-    // Verify key merchant names and domains from the requirements
+    // Verify key merchant names and domains
     expect(screen.getByText(/spotify\.com/i)).toBeInTheDocument();
     expect(screen.getByText(/openai\.com/i)).toBeInTheDocument();
     expect(screen.getByText(/youtube\.com/i)).toBeInTheDocument();
@@ -61,18 +61,19 @@ describe('MerchantShowcase Component', () => {
     expect(onClaimMock).toHaveBeenCalled();
   });
 
-  it('filters merchant directory by category count pills', () => {
+  it('filters merchant directory by category filter pills', () => {
     render(<MerchantShowcase store={store} />);
 
-    // Click CLOUD & INFRA filter
-    const cloudFilter = screen.getByRole('button', { name: /CLOUD & INFRA/i });
+    // Click Productivity & Cloud filter
+    const cloudFilter = screen.getByRole('button', { name: /Productivity & Cloud/i });
     fireEvent.click(cloudFilter);
 
     expect(screen.getByText(/aws\.amazon\.com/i)).toBeInTheDocument();
+    expect(screen.getByText(/notion\.so/i)).toBeInTheDocument();
     expect(screen.queryByText(/spotify\.com/i)).not.toBeInTheDocument();
 
-    // Click MUSIC & STREAMING filter
-    const musicFilter = screen.getByRole('button', { name: /MUSIC & STREAMING/i });
+    // Click Music & Streaming filter
+    const musicFilter = screen.getByRole('button', { name: /Music & Streaming/i });
     fireEvent.click(musicFilter);
 
     expect(screen.getByText(/spotify\.com/i)).toBeInTheDocument();
@@ -83,7 +84,7 @@ describe('MerchantShowcase Component', () => {
   it('filters merchant directory using the search input', () => {
     render(<MerchantShowcase store={store} />);
 
-    const searchInput = screen.getByPlaceholderText(/Search sites, tools, or categories/i);
+    const searchInput = screen.getByPlaceholderText(/Search student discounts/i);
     fireEvent.change(searchInput, { target: { value: 'figma' } });
 
     expect(screen.getByText(/figma\.com/i)).toBeInTheDocument();
@@ -96,10 +97,10 @@ describe('MerchantShowcase Component', () => {
     render(<MerchantShowcase store={store} />);
 
     expect(screen.getByText('EDU-SPOTIFY-8X29K')).toBeInTheDocument();
-    expect(screen.getAllByText(/APPROVED/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Approved/i).length).toBeGreaterThan(0);
 
     // Test copy to clipboard
-    const copyButton = screen.getByRole('button', { name: /Copy Code/i });
+    const copyButton = screen.getAllByRole('button', { name: /Copy/i })[0];
     fireEvent.click(copyButton);
 
     expect(navigator.clipboard.writeText).toHaveBeenCalledWith('EDU-SPOTIFY-8X29K');
@@ -119,22 +120,23 @@ describe('MerchantShowcase Component', () => {
 
     render(<MerchantShowcase store={store} />);
 
-    expect(screen.getByText(/ACTION NEEDED/i)).toBeInTheDocument();
+    expect(screen.getByText(/Action Needed/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Retry Verification/i })).toBeInTheDocument();
   });
 
-  it('renders FAQ and API For Agents sections matching editorial spec', () => {
+  it('renders FAQ and WebMCP Protocol for AI Agents sections matching editorial spec', () => {
     render(<MerchantShowcase store={store} />);
 
-    expect(screen.getByText(/— FREQUENTLY ASKED/i)).toBeInTheDocument();
-    expect(screen.getByText(/What is WebMCP Student Verification\?/i)).toBeInTheDocument();
-    expect(screen.getByText(/— API FOR AGENTS/i)).toBeInTheDocument();
-    expect(screen.getByText(/GET \/api\/v1\/lookup\?url=\.\.\./i)).toBeInTheDocument();
+    expect(screen.getByText(/Frequently Asked Questions/i)).toBeInTheDocument();
+    expect(screen.getByText(/How does zero-PII student verification work\?/i)).toBeInTheDocument();
+    expect(screen.getByText(/WebMCP Protocol for AI Agents/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/submit_student_verification/i).length).toBeGreaterThan(0);
 
     // Test expanding FAQ accordion
-    const faqBtn = screen.getByRole('button', { name: /What is WebMCP Student Verification\?/i });
+    const faqBtn = screen.getByRole('button', { name: /How does zero-PII student verification work\?/i });
     fireEvent.click(faqBtn);
 
-    expect(screen.getByText(/zero-PII student discount protocol/i)).toBeInTheDocument();
+    expect(screen.getByText(/browser sandbox \(IndexedDB\)/i)).toBeInTheDocument();
   });
 });
+

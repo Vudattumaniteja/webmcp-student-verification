@@ -173,7 +173,7 @@ export default function VerificationWizardModal({
   // Step 1 -> Step 2
   const handleProceedToDetails = () => {
     if (!selectedSchool) {
-      setFormError('Please select your accredited institution.');
+      setFormError('Please select your accredited higher education institution.');
       return;
     }
     setFormError(null);
@@ -381,26 +381,26 @@ export default function VerificationWizardModal({
       role="dialog"
       aria-modal="true"
       aria-labelledby="wizard-title"
-      className="fixed inset-0 z-50 bg-black/75 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5 overflow-y-auto"
+      className="fixed inset-0 z-50 bg-stone-900/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 overflow-y-auto"
     >
-      <div className="bg-[#FAF7F2] text-neutral-900 border-2 border-neutral-900 rounded-2xl max-w-2xl w-full shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150 my-auto">
+      <div className="bg-[#FAF9F6] text-stone-900 border border-stone-200 rounded-2xl max-w-2xl w-full shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150 my-auto">
         {/* Wizard Top Header */}
-        <div className="bg-white border-b-2 border-neutral-900 px-5 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-neutral-900 text-white flex items-center justify-center font-bold text-sm shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] shrink-0">
+        <div className="bg-white border-b border-stone-200 px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3.5">
+            <div className="h-10 w-10 rounded-xl bg-blue-50 border border-blue-200 text-[#2563EB] flex items-center justify-center font-bold text-sm shadow-xs shrink-0">
               {merchant.brand[0]}
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 id="wizard-title" className="font-serif font-bold text-base text-neutral-900 leading-tight">
+                <h2 id="wizard-title" className="font-serif font-bold text-base sm:text-lg text-stone-900 leading-tight">
                   {merchant.name}
                 </h2>
-                <span className="text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded-full bg-emerald-100 border border-neutral-900 text-emerald-900">
-                  SheerID & WebMCP
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800">
+                  SheerID &amp; WebMCP
                 </span>
               </div>
-              <p className="text-xs text-neutral-600 font-sans">
-                {merchant.discountValue} • Student Verification
+              <p className="text-xs text-stone-500 font-sans mt-0.5">
+                {merchant.discountValue} • Academic Verification
               </p>
             </div>
           </div>
@@ -409,54 +409,54 @@ export default function VerificationWizardModal({
             type="button"
             onClick={onClose}
             aria-label="Close verification modal"
-            className="p-1.5 rounded-lg border border-neutral-900 hover:bg-neutral-100 text-neutral-900 transition shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] cursor-pointer"
+            className="p-1.5 rounded-lg border border-stone-200 hover:bg-stone-100 text-stone-600 hover:text-stone-900 transition shadow-xs cursor-pointer"
           >
             <X className="h-4 w-4" />
           </button>
         </div>
 
         {/* Step Indicator Bar */}
-        <div className="bg-[#F5F1E9] border-b border-neutral-900 px-5 py-2.5 flex items-center justify-between text-xs font-mono">
+        <div className="bg-[#F8F7F4] border-b border-stone-200 px-6 py-3 flex items-center justify-between text-xs font-mono">
           <div className="flex items-center gap-2">
             <span
-              className={`flex items-center justify-center h-5 w-5 rounded-full text-[11px] font-bold border border-neutral-900 ${
+              className={`flex items-center justify-center h-5 w-5 rounded-full text-[11px] font-bold ${
                 currentStep === 'UNIVERSITY_SELECT'
-                  ? 'bg-neutral-900 text-white'
-                  : 'bg-white text-neutral-900'
+                  ? 'bg-[#2563EB] text-white shadow-xs'
+                  : 'bg-white border border-stone-300 text-stone-700'
               }`}
             >
               1
             </span>
-            <span className={currentStep === 'UNIVERSITY_SELECT' ? 'font-bold' : 'text-neutral-600'}>
+            <span className={currentStep === 'UNIVERSITY_SELECT' ? 'font-semibold text-stone-900' : 'text-stone-500'}>
               University
             </span>
           </div>
 
-          <span className="text-neutral-400">→</span>
+          <span className="text-stone-300">→</span>
 
           <div className="flex items-center gap-2">
             <span
-              className={`flex items-center justify-center h-5 w-5 rounded-full text-[11px] font-bold border border-neutral-900 ${
+              className={`flex items-center justify-center h-5 w-5 rounded-full text-[11px] font-bold ${
                 currentStep === 'STUDENT_DETAILS'
-                  ? 'bg-neutral-900 text-white'
-                  : 'bg-white text-neutral-900'
+                  ? 'bg-[#2563EB] text-white shadow-xs'
+                  : 'bg-white border border-stone-300 text-stone-700'
               }`}
             >
               2
             </span>
-            <span className={currentStep === 'STUDENT_DETAILS' ? 'font-bold' : 'text-neutral-600'}>
+            <span className={currentStep === 'STUDENT_DETAILS' ? 'font-semibold text-stone-900' : 'text-stone-500'}>
               Student Details
             </span>
           </div>
 
-          <span className="text-neutral-400">→</span>
+          <span className="text-stone-300">→</span>
 
           <div className="flex items-center gap-2">
             <span
-              className={`flex items-center justify-center h-5 w-5 rounded-full text-[11px] font-bold border border-neutral-900 ${
+              className={`flex items-center justify-center h-5 w-5 rounded-full text-[11px] font-bold ${
                 currentStep === 'DOCUMENT_PROOF' || currentStep === 'VERIFYING'
-                  ? 'bg-neutral-900 text-white'
-                  : 'bg-white text-neutral-900'
+                  ? 'bg-[#2563EB] text-white shadow-xs'
+                  : 'bg-white border border-stone-300 text-stone-700'
               }`}
             >
               3
@@ -464,37 +464,37 @@ export default function VerificationWizardModal({
             <span
               className={
                 currentStep === 'DOCUMENT_PROOF' || currentStep === 'VERIFYING'
-                  ? 'font-bold'
-                  : 'text-neutral-600'
+                  ? 'font-semibold text-stone-900'
+                  : 'text-stone-500'
               }
             >
               Verification
             </span>
           </div>
 
-          <span className="text-neutral-400">→</span>
+          <span className="text-stone-300">→</span>
 
           <div className="flex items-center gap-2">
             <span
-              className={`flex items-center justify-center h-5 w-5 rounded-full text-[11px] font-bold border border-neutral-900 ${
+              className={`flex items-center justify-center h-5 w-5 rounded-full text-[11px] font-bold ${
                 currentStep === 'REWARD_UNLOCKED'
-                  ? 'bg-emerald-600 text-white border-emerald-800'
-                  : 'bg-white text-neutral-900'
+                  ? 'bg-emerald-600 text-white shadow-xs'
+                  : 'bg-white border border-stone-300 text-stone-700'
               }`}
             >
               4
             </span>
-            <span className={currentStep === 'REWARD_UNLOCKED' ? 'font-bold text-emerald-800' : 'text-neutral-600'}>
+            <span className={currentStep === 'REWARD_UNLOCKED' ? 'font-semibold text-emerald-800' : 'text-stone-500'}>
               Reward
             </span>
           </div>
         </div>
 
         {/* Modal Body */}
-        <div className="p-5 sm:p-6 flex flex-col gap-4 overflow-y-auto max-h-[70vh]">
+        <div className="p-6 sm:p-7 flex flex-col gap-4 overflow-y-auto max-h-[70vh]">
           {/* Error Banner */}
           {formError && (
-            <div className="p-3 bg-rose-50 border-2 border-neutral-900 rounded-xl text-xs text-rose-900 flex items-start gap-2.5 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+            <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-900 flex items-start gap-2.5 shadow-xs">
               <AlertTriangle className="h-4 w-4 text-rose-600 shrink-0 mt-0.5" />
               <p className="leading-snug font-medium">{formError}</p>
             </div>
@@ -502,23 +502,21 @@ export default function VerificationWizardModal({
 
           {/* Quick Auto-Fill Toast Notification */}
           {autofillSuccess && (
-            <div className="p-2.5 bg-emerald-50 border border-neutral-900 rounded-xl text-xs text-emerald-900 flex items-center gap-2 animate-in fade-in shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]">
+            <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-900 flex items-center gap-2 animate-in fade-in shadow-xs">
               <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-              <span className="font-medium">Student identity credentials synced from Vault!</span>
+              <span className="font-medium">Student identity credentials synced from Student Vault!</span>
             </div>
           )}
 
-          {/* ========================================================================= */}
-          {/* STEP 1: SELECT / SEARCH UNIVERSITY                                       */}
-          {/* ========================================================================= */}
+          {/* STEP 1: SELECT / SEARCH UNIVERSITY */}
           {currentStep === 'UNIVERSITY_SELECT' && (
             <div className="flex flex-col gap-4">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between flex-wrap gap-2">
                 <div>
-                  <h3 className="font-serif font-bold text-lg text-neutral-900">
+                  <h3 className="font-serif font-bold text-lg text-stone-900">
                     Select Your Higher Education Institution
                   </h3>
-                  <p className="text-xs text-neutral-600 mt-0.5 font-sans">
+                  <p className="text-xs text-stone-500 mt-0.5 font-sans">
                     Search accredited universities in the SheerID and WebMCP verification network.
                   </p>
                 </div>
@@ -526,7 +524,7 @@ export default function VerificationWizardModal({
                 <button
                   type="button"
                   onClick={handleAutoFillFromVault}
-                  className="px-3 py-1.5 bg-white border border-neutral-900 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-neutral-900 hover:text-white transition cursor-pointer"
+                  className="px-3 py-1.5 bg-white border border-stone-200 rounded-lg text-xs font-medium text-stone-800 flex items-center gap-1.5 shadow-xs hover:bg-stone-50 transition cursor-pointer"
                   title="Auto-fill with currently loaded student vault persona"
                 >
                   <Sparkles className="h-3.5 w-3.5 text-amber-500" />
@@ -534,9 +532,9 @@ export default function VerificationWizardModal({
                 </button>
               </div>
 
-              {/* Quick Pick Chips */}
+              {/* Quick Select Preset Chips */}
               <div className="flex flex-wrap items-center gap-2 pt-1">
-                <span className="text-[11px] font-mono uppercase text-neutral-500 font-bold">
+                <span className="text-[11px] font-mono uppercase text-stone-500 font-semibold">
                   Quick Select:
                 </span>
                 {[
@@ -554,15 +552,15 @@ export default function VerificationWizardModal({
                       onClick={() => {
                         if (school) setSelectedSchool(school);
                       }}
-                      className={`px-2.5 py-1 rounded-full border border-neutral-900 text-xs font-mono font-medium transition cursor-pointer flex items-center gap-1.5 ${
+                      className={`px-3 py-1 rounded-full text-xs font-medium transition cursor-pointer flex items-center gap-1.5 ${
                         isSelected
-                          ? 'bg-neutral-900 text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
-                          : 'bg-white hover:bg-neutral-100 text-neutral-900 shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]'
+                          ? 'bg-[#2563EB] text-white shadow-xs font-semibold'
+                          : 'bg-white hover:bg-stone-100 text-stone-700 border border-stone-200 shadow-xs'
                       }`}
                     >
                       <span>{item.name}</span>
                       {item.instant && (
-                        <span className="text-[9px] px-1 py-0.2 rounded bg-amber-300 text-neutral-900 font-bold">
+                        <span className="text-[9px] px-1 py-0.2 rounded bg-amber-200 text-stone-900 font-bold">
                           INSTANT
                         </span>
                       )}
@@ -576,14 +574,14 @@ export default function VerificationWizardModal({
                 <label htmlFor={schoolSearchInputId} className="sr-only">
                   Search university
                 </label>
-                <Search className="h-4 w-4 text-neutral-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <Search className="h-4 w-4 text-stone-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                 <input
                   id={schoolSearchInputId}
                   type="text"
                   placeholder="Type university name (e.g. Stanford, MIT, Harvard, UC Berkeley)..."
                   value={schoolSearchQuery}
                   onChange={(e) => setSchoolSearchQuery(e.target.value)}
-                  className="w-full bg-white border-2 border-neutral-900 rounded-xl pl-10 pr-4 py-2.5 text-xs text-neutral-900 placeholder-neutral-400 font-sans focus:outline-none shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+                  className="w-full bg-white border border-stone-200 rounded-xl pl-10 pr-4 py-2.5 text-xs text-stone-900 placeholder-stone-400 font-sans focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] shadow-xs"
                 />
               </div>
 
@@ -595,19 +593,19 @@ export default function VerificationWizardModal({
                     <div
                       key={school.id}
                       onClick={() => setSelectedSchool(school)}
-                      className={`p-3 rounded-xl border-2 transition cursor-pointer flex items-center justify-between ${
+                      className={`p-3.5 rounded-xl border transition cursor-pointer flex items-center justify-between ${
                         isSelected
-                          ? 'bg-amber-50/80 border-neutral-900 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]'
-                          : 'bg-white border-neutral-900/40 hover:border-neutral-900 hover:bg-white shadow-[1px_1px_0px_0px_rgba(0,0,0,0.5)]'
+                          ? 'bg-blue-50/70 border-blue-300 shadow-xs'
+                          : 'bg-white border-stone-200 hover:border-stone-300 hover:bg-stone-50/50 shadow-xs'
                       }`}
                     >
                       <div className="flex items-center gap-3">
-                        <div className="h-9 w-9 rounded-lg bg-neutral-900 text-white flex items-center justify-center shrink-0">
-                          <GraduationCap className="h-5 w-5" />
+                        <div className="h-9 w-9 rounded-lg bg-stone-100 text-stone-700 border border-stone-200 flex items-center justify-center shrink-0">
+                          <GraduationCap className="h-5 w-5 text-[#2563EB]" />
                         </div>
                         <div>
-                          <h4 className="font-bold text-xs text-neutral-900">{school.name}</h4>
-                          <span className="font-mono text-[11px] text-neutral-500">
+                          <h4 className="font-semibold text-xs text-stone-900">{school.name}</h4>
+                          <span className="font-mono text-[11px] text-stone-500">
                             {school.domain} • {school.country}
                           </span>
                         </div>
@@ -615,18 +613,18 @@ export default function VerificationWizardModal({
 
                       <div className="flex items-center gap-2">
                         {school.instantMatchEligible ? (
-                          <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-100 border border-neutral-900 text-emerald-900 flex items-center gap-1">
+                          <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 flex items-center gap-1">
                             <Zap className="h-3 w-3 fill-emerald-600 text-emerald-600" />
                             <span>Instant Match Eligible</span>
                           </span>
                         ) : (
-                          <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-neutral-100 border border-neutral-400 text-neutral-600">
+                          <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-stone-100 text-stone-600 border border-stone-200">
                             Document Required
                           </span>
                         )}
 
                         {isSelected && (
-                          <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+                          <CheckCircle2 className="h-4 w-4 text-[#2563EB] shrink-0" />
                         )}
                       </div>
                     </div>
@@ -635,8 +633,8 @@ export default function VerificationWizardModal({
               </div>
 
               {/* Step Footer Action */}
-              <div className="flex items-center justify-between pt-3 border-t border-neutral-900/20">
-                <span className="text-xs text-neutral-500 font-mono">
+              <div className="flex items-center justify-between pt-3 border-t border-stone-200">
+                <span className="text-xs text-stone-500 font-mono">
                   {selectedSchool ? `Selected: ${selectedSchool.name}` : 'No school selected'}
                 </span>
 
@@ -644,7 +642,7 @@ export default function VerificationWizardModal({
                   type="button"
                   onClick={handleProceedToDetails}
                   disabled={!selectedSchool}
-                  className="px-5 py-2.5 bg-neutral-900 text-white border-2 border-neutral-900 rounded-xl text-xs font-mono font-bold flex items-center gap-2 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:bg-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
+                  className="px-5 py-2.5 bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-xl text-xs font-semibold flex items-center gap-2 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer active:scale-98"
                 >
                   <span>Continue to Student Info</span>
                   <ArrowRight className="h-3.5 w-3.5" />
@@ -653,26 +651,24 @@ export default function VerificationWizardModal({
             </div>
           )}
 
-          {/* ========================================================================= */}
-          {/* STEP 2: STUDENT DETAILS FORM                                             */}
-          {/* ========================================================================= */}
+          {/* STEP 2: STUDENT DETAILS FORM */}
           {currentStep === 'STUDENT_DETAILS' && (
             <form onSubmit={handleSubmitDetails} className="flex flex-col gap-4">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between flex-wrap gap-2">
                 <div>
-                  <h3 className="font-serif font-bold text-lg text-neutral-900">
+                  <h3 className="font-serif font-bold text-lg text-stone-900">
                     Verify Your Student Identity
                   </h3>
-                  <p className="text-xs text-neutral-600 mt-0.5 font-sans">
+                  <p className="text-xs text-stone-500 mt-0.5 font-sans">
                     Enter your enrollment details for{' '}
-                    <strong className="text-neutral-900">{selectedSchool?.name}</strong>.
+                    <strong className="text-stone-900">{selectedSchool?.name}</strong>.
                   </p>
                 </div>
 
                 <button
                   type="button"
                   onClick={handleAutoFillFromVault}
-                  className="px-3 py-1.5 bg-white border border-neutral-900 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-neutral-900 hover:text-white transition cursor-pointer"
+                  className="px-3 py-1.5 bg-white border border-stone-200 rounded-lg text-xs font-medium text-stone-800 flex items-center gap-1.5 shadow-xs hover:bg-stone-50 transition cursor-pointer"
                 >
                   <Sparkles className="h-3.5 w-3.5 text-amber-500" />
                   <span>Auto-fill from Vault</span>
@@ -681,18 +677,18 @@ export default function VerificationWizardModal({
 
               {/* Institution Summary Card */}
               {selectedSchool && (
-                <div className="p-3 bg-white border border-neutral-900 rounded-xl flex items-center justify-between text-xs shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                <div className="p-3 bg-white border border-stone-200 rounded-xl flex items-center justify-between text-xs shadow-xs">
                   <div className="flex items-center gap-2.5">
-                    <GraduationCap className="h-4 w-4 text-neutral-700" />
-                    <span className="font-bold text-neutral-900">{selectedSchool.name}</span>
+                    <GraduationCap className="h-4 w-4 text-[#2563EB]" />
+                    <span className="font-semibold text-stone-900">{selectedSchool.name}</span>
                   </div>
                   {selectedSchool.instantMatchEligible ? (
-                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-100 border border-neutral-900 text-emerald-900 flex items-center gap-1">
+                    <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 flex items-center gap-1">
                       <Zap className="h-3 w-3 fill-emerald-600 text-emerald-600" />
                       <span>Instant Match Enabled</span>
                     </span>
                   ) : (
-                    <span className="text-[10px] font-mono text-neutral-500">
+                    <span className="text-[10px] font-mono text-stone-500">
                       Standard Proof Flow
                     </span>
                   )}
@@ -702,7 +698,7 @@ export default function VerificationWizardModal({
               {/* Form Input Fields */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                 <div>
-                  <label htmlFor={firstNameInputId} className="block text-neutral-700 font-bold mb-1">
+                  <label htmlFor={firstNameInputId} className="block text-stone-700 font-semibold mb-1">
                     First Name
                   </label>
                   <input
@@ -712,12 +708,12 @@ export default function VerificationWizardModal({
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
                     required
-                    className="w-full bg-white border-2 border-neutral-900 rounded-xl p-2.5 text-xs text-neutral-900 font-sans focus:outline-none shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+                    className="w-full bg-white border border-stone-200 rounded-xl p-2.5 text-xs text-stone-900 font-sans focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] shadow-xs"
                   />
                 </div>
 
                 <div>
-                  <label htmlFor={lastNameInputId} className="block text-neutral-700 font-bold mb-1">
+                  <label htmlFor={lastNameInputId} className="block text-stone-700 font-semibold mb-1">
                     Last Name
                   </label>
                   <input
@@ -727,12 +723,12 @@ export default function VerificationWizardModal({
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
                     required
-                    className="w-full bg-white border-2 border-neutral-900 rounded-xl p-2.5 text-xs text-neutral-900 font-sans focus:outline-none shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+                    className="w-full bg-white border border-stone-200 rounded-xl p-2.5 text-xs text-stone-900 font-sans focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] shadow-xs"
                   />
                 </div>
 
                 <div>
-                  <label htmlFor={birthDateInputId} className="block text-neutral-700 font-bold mb-1">
+                  <label htmlFor={birthDateInputId} className="block text-stone-700 font-semibold mb-1">
                     Date of Birth
                   </label>
                   <input
@@ -741,12 +737,12 @@ export default function VerificationWizardModal({
                     value={birthDate}
                     onChange={(e) => setBirthDate(e.target.value)}
                     required
-                    className="w-full bg-white border-2 border-neutral-900 rounded-xl p-2.5 text-xs text-neutral-900 font-mono focus:outline-none shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+                    className="w-full bg-white border border-stone-200 rounded-xl p-2.5 text-xs text-stone-900 font-mono focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] shadow-xs"
                   />
                 </div>
 
                 <div>
-                  <label htmlFor={emailInputId} className="block text-neutral-700 font-bold mb-1">
+                  <label htmlFor={emailInputId} className="block text-stone-700 font-semibold mb-1">
                     University Email (.edu)
                   </label>
                   <input
@@ -756,25 +752,25 @@ export default function VerificationWizardModal({
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
-                    className="w-full bg-white border-2 border-neutral-900 rounded-xl p-2.5 text-xs text-neutral-900 font-mono focus:outline-none shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+                    className="w-full bg-white border border-stone-200 rounded-xl p-2.5 text-xs text-stone-900 font-mono focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] shadow-xs"
                   />
                 </div>
               </div>
 
               {/* Zero-PII Security Assurance Note */}
-              <div className="p-3 bg-neutral-100 border border-neutral-900/60 rounded-xl text-[11px] text-neutral-600 flex items-start gap-2 font-sans">
+              <div className="p-3 bg-stone-100/80 border border-stone-200 rounded-xl text-[11px] text-stone-600 flex items-start gap-2 font-sans">
                 <ShieldCheck className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
                 <p className="leading-snug">
-                  Zero-PII Assurance: Personal details are evaluated in client sandbox and sent only to SheerID verification registrar.
+                  Zero-PII Assurance: Personal details are evaluated in your local client sandbox and sent only to the SheerID verification registrar.
                 </p>
               </div>
 
               {/* Actions Footer */}
-              <div className="flex items-center justify-between pt-3 border-t border-neutral-900/20">
+              <div className="flex items-center justify-between pt-3 border-t border-stone-200">
                 <button
                   type="button"
                   onClick={() => setCurrentStep('UNIVERSITY_SELECT')}
-                  className="px-4 py-2 bg-white text-neutral-900 border border-neutral-900 rounded-xl text-xs font-mono font-medium flex items-center gap-1.5 hover:bg-neutral-100 transition cursor-pointer"
+                  className="px-4 py-2 bg-white text-stone-700 border border-stone-200 rounded-xl text-xs font-medium flex items-center gap-1.5 hover:bg-stone-50 transition cursor-pointer shadow-xs"
                 >
                   <ArrowLeft className="h-3.5 w-3.5" />
                   <span>Back</span>
@@ -782,7 +778,7 @@ export default function VerificationWizardModal({
 
                 <button
                   type="submit"
-                  className="px-5 py-2.5 bg-neutral-900 text-white border-2 border-neutral-900 rounded-xl text-xs font-mono font-bold flex items-center gap-2 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:bg-neutral-800 transition cursor-pointer"
+                  className="px-5 py-2.5 bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-xl text-xs font-semibold flex items-center gap-2 shadow-sm transition cursor-pointer active:scale-98"
                 >
                   <span>Submit & Verify</span>
                   <ArrowRight className="h-3.5 w-3.5" />
@@ -791,27 +787,25 @@ export default function VerificationWizardModal({
             </form>
           )}
 
-          {/* ========================================================================= */}
-          {/* STEP 3: DOCUMENT PROOF & AUTONOMOUS RECOVERY                             */}
-          {/* ========================================================================= */}
+          {/* STEP 3: DOCUMENT PROOF & AUTONOMOUS RECOVERY */}
           {currentStep === 'DOCUMENT_PROOF' && (
             <div className="flex flex-col gap-4">
               <div>
-                <h3 className="font-serif font-bold text-lg text-neutral-900">
+                <h3 className="font-serif font-bold text-lg text-stone-900">
                   Upload Proof of Enrollment
                 </h3>
-                <p className="text-xs text-neutral-600 mt-0.5 font-sans">
-                  Proof is required for <strong>{selectedSchool?.name}</strong>. Choose a document from your Vault or upload a file.
+                <p className="text-xs text-stone-500 mt-0.5 font-sans">
+                  Proof is required for <strong>{selectedSchool?.name}</strong>. Choose a document from your Student Vault or upload a file.
                 </p>
               </div>
 
               {/* Autonomous Recovery Alert Banner if rejected */}
               {rejectionResult && (
                 <div
-                  className={`p-4 rounded-xl border-2 border-neutral-900 flex flex-col gap-3 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] ${
+                  className={`p-4 rounded-xl border flex flex-col gap-3 shadow-xs ${
                     rejectionResult.rejectionCode === 'EXPIRED_DOCUMENT'
-                      ? 'bg-rose-50 text-rose-950'
-                      : 'bg-amber-50 text-amber-950'
+                      ? 'bg-rose-50 border-rose-200 text-rose-950'
+                      : 'bg-amber-50 border-amber-200 text-amber-950'
                   }`}
                 >
                   <div className="flex items-start gap-2.5">
@@ -823,7 +817,7 @@ export default function VerificationWizardModal({
                       }`}
                     />
                     <div className="leading-snug">
-                      <h4 className="font-bold text-xs uppercase tracking-wide font-mono">
+                      <h4 className="font-semibold text-xs uppercase tracking-wide font-mono">
                         Verification Issue: {rejectionResult.rejectionCode}
                       </h4>
                       <p className="text-xs mt-0.5 font-sans">
@@ -834,14 +828,14 @@ export default function VerificationWizardModal({
 
                   {/* 1-Click Recovery Recommendation */}
                   {recommendedDoc && (
-                    <div className="bg-white border border-neutral-900 p-3 rounded-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]">
+                    <div className="bg-white border border-stone-200 p-3 rounded-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
                       <div className="flex items-center gap-2">
                         <FileText className="h-4 w-4 text-emerald-600" />
                         <div>
-                          <span className="font-bold text-xs text-neutral-900 block">
+                          <span className="font-semibold text-xs text-stone-900 block">
                             Recommended Replacement: {recommendedDoc.title}
                           </span>
-                          <span className="text-[11px] text-neutral-500 font-mono">
+                          <span className="text-[11px] text-stone-500 font-mono">
                             {recommendedDoc.fileName} • {recommendedDoc.docType}
                           </span>
                         </div>
@@ -850,7 +844,7 @@ export default function VerificationWizardModal({
                       <button
                         type="button"
                         onClick={() => handleOneClickRecovery(recommendedDoc.id)}
-                        className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white border border-neutral-900 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition cursor-pointer shrink-0"
+                        className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 shadow-xs transition cursor-pointer shrink-0"
                       >
                         <RotateCcw className="h-3.5 w-3.5" />
                         <span>Re-verify with {recommendedDoc.docType === 'TUITION_RECEIPT' ? 'Tuition Receipt' : 'Transcript'}</span>
@@ -862,7 +856,7 @@ export default function VerificationWizardModal({
 
               {/* Vault Documents Pick List */}
               <div className="flex flex-col gap-2.5">
-                <span className="text-xs font-bold text-neutral-800 font-mono uppercase tracking-wide">
+                <span className="text-xs font-semibold text-stone-800 font-mono uppercase tracking-wide">
                   Select from Student Vault ({vaultDocuments.length} available):
                 </span>
 
@@ -876,24 +870,24 @@ export default function VerificationWizardModal({
                           setSelectedDocumentId(doc.id);
                           setCustomFile(null);
                         }}
-                        className={`p-3 rounded-xl border-2 transition cursor-pointer flex items-center justify-between ${
+                        className={`p-3.5 rounded-xl border transition cursor-pointer flex items-center justify-between ${
                           isSelected
-                            ? 'bg-amber-50 border-neutral-900 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]'
-                            : 'bg-white border-neutral-900/40 hover:border-neutral-900 hover:bg-white shadow-[1px_1px_0px_0px_rgba(0,0,0,0.5)]'
+                            ? 'bg-blue-50/70 border-blue-300 shadow-xs'
+                            : 'bg-white border-stone-200 hover:border-stone-300 hover:bg-stone-50 shadow-xs'
                         }`}
                       >
                         <div className="flex items-center gap-3">
-                          <div className="h-8 w-8 rounded-lg bg-neutral-900 text-white flex items-center justify-center shrink-0">
-                            <FileText className="h-4 w-4" />
+                          <div className="h-8 w-8 rounded-lg bg-stone-100 text-stone-700 border border-stone-200 flex items-center justify-center shrink-0">
+                            <FileText className="h-4 w-4 text-[#2563EB]" />
                           </div>
                           <div>
                             <div className="flex items-center gap-2">
-                              <h4 className="font-bold text-xs text-neutral-900">{doc.title}</h4>
-                              <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-neutral-100 border border-neutral-400">
+                              <h4 className="font-semibold text-xs text-stone-900">{doc.title}</h4>
+                              <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-stone-100 border border-stone-200 text-stone-600">
                                 {doc.docType}
                               </span>
                             </div>
-                            <span className="font-mono text-[11px] text-neutral-500">
+                            <span className="font-mono text-[11px] text-stone-500">
                               {doc.fileName} • {Math.round(doc.fileSizeBytes / 1024)} KB
                               {doc.expirationDate && ` • Exp: ${doc.expirationDate}`}
                             </span>
@@ -902,21 +896,21 @@ export default function VerificationWizardModal({
 
                         <div className="flex items-center gap-2">
                           {doc.isValid ? (
-                            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-100 border border-neutral-900 text-emerald-900">
+                            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800">
                               VALID
                             </span>
                           ) : doc.isIllegible ? (
-                            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-amber-100 border border-neutral-900 text-amber-900">
+                            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-800">
                               BLURRY
                             </span>
                           ) : (
-                            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-rose-100 border border-neutral-900 text-rose-900">
+                            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-rose-50 border border-rose-200 text-rose-800">
                               EXPIRED
                             </span>
                           )}
 
                           {isSelected && (
-                            <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+                            <CheckCircle2 className="h-4 w-4 text-[#2563EB] shrink-0" />
                           )}
                         </div>
                       </div>
@@ -926,12 +920,12 @@ export default function VerificationWizardModal({
               </div>
 
               {/* Or Upload Custom File */}
-              <div className="p-3 bg-white border border-dashed border-neutral-900 rounded-xl flex items-center justify-between gap-3 text-xs">
+              <div className="p-3.5 bg-white border border-dashed border-stone-300 rounded-xl flex items-center justify-between gap-3 text-xs shadow-xs">
                 <div className="flex items-center gap-2.5">
-                  <Upload className="h-4 w-4 text-neutral-600" />
+                  <Upload className="h-4 w-4 text-stone-500" />
                   <div>
-                    <span className="font-bold text-neutral-900">Upload File from Device</span>
-                    <span className="text-[11px] text-neutral-500 font-mono block">
+                    <span className="font-semibold text-stone-900">Upload File from Device</span>
+                    <span className="text-[11px] text-stone-500 font-mono block">
                       PDF, PNG, JPEG up to 10MB
                     </span>
                   </div>
@@ -940,7 +934,7 @@ export default function VerificationWizardModal({
                 <div>
                   <label
                     htmlFor={fileUploadInputId}
-                    className="px-3 py-1.5 bg-neutral-900 text-white rounded-lg font-mono text-xs font-bold cursor-pointer hover:bg-neutral-800 inline-block"
+                    className="px-3.5 py-1.5 bg-stone-900 hover:bg-stone-800 text-white rounded-lg font-mono text-xs font-semibold cursor-pointer transition inline-block shadow-xs"
                   >
                     {customFile ? customFile.name : 'Choose File'}
                   </label>
@@ -960,11 +954,11 @@ export default function VerificationWizardModal({
               </div>
 
               {/* Step Footer Actions */}
-              <div className="flex items-center justify-between pt-3 border-t border-neutral-900/20">
+              <div className="flex items-center justify-between pt-3 border-t border-stone-200">
                 <button
                   type="button"
                   onClick={() => setCurrentStep('STUDENT_DETAILS')}
-                  className="px-4 py-2 bg-white text-neutral-900 border border-neutral-900 rounded-xl text-xs font-mono font-medium flex items-center gap-1.5 hover:bg-neutral-100 transition cursor-pointer"
+                  className="px-4 py-2 bg-white text-stone-700 border border-stone-200 rounded-xl text-xs font-medium flex items-center gap-1.5 hover:bg-stone-50 transition cursor-pointer shadow-xs"
                 >
                   <ArrowLeft className="h-3.5 w-3.5" />
                   <span>Back</span>
@@ -974,7 +968,7 @@ export default function VerificationWizardModal({
                   type="button"
                   onClick={() => handleSubmitDocument()}
                   disabled={!selectedDocumentId && !customFile}
-                  className="px-5 py-2.5 bg-neutral-900 text-white border-2 border-neutral-900 rounded-xl text-xs font-mono font-bold flex items-center gap-2 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:bg-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
+                  className="px-5 py-2.5 bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-xl text-xs font-semibold flex items-center gap-2 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer active:scale-98"
                 >
                   <span>Submit Proof Document</span>
                   <ArrowRight className="h-3.5 w-3.5" />
@@ -983,90 +977,86 @@ export default function VerificationWizardModal({
             </div>
           )}
 
-          {/* ========================================================================= */}
-          {/* STEP 3.5: VERIFYING IN PROGRESS WITH PRE-SIGNED UPLOAD PROGRESS          */}
-          {/* ========================================================================= */}
+          {/* STEP 3.5: VERIFYING IN PROGRESS */}
           {currentStep === 'VERIFYING' && (
-            <div className="py-8 px-4 flex flex-col items-center justify-center text-center gap-4">
-              <div className="h-16 w-16 rounded-2xl bg-neutral-900 text-white flex items-center justify-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+            <div className="py-10 px-4 flex flex-col items-center justify-center text-center gap-4">
+              <div className="h-16 w-16 rounded-2xl bg-blue-50 border border-blue-200 text-[#2563EB] flex items-center justify-center shadow-md">
                 <Loader2 className="h-8 w-8 animate-spin" />
               </div>
 
               <div>
-                <h3 className="font-serif font-bold text-xl text-neutral-900">
-                  Verifying with SheerID & WebMCP
+                <h3 className="font-serif font-bold text-xl text-stone-900">
+                  Verifying with SheerID &amp; WebMCP
                 </h3>
-                <p className="text-xs text-neutral-600 mt-1 font-mono">
+                <p className="text-xs text-stone-500 mt-1 font-mono">
                   Streaming pre-signed binary asset to verification authority...
                 </p>
               </div>
 
               {/* Progress Bar */}
-              <div className="w-full max-w-md bg-neutral-200 border-2 border-neutral-900 rounded-full h-4 overflow-hidden p-0.5">
+              <div className="w-full max-w-md bg-stone-200 rounded-full h-3 overflow-hidden">
                 <div
-                  className="bg-neutral-900 h-full rounded-full transition-all duration-300"
+                  className="bg-[#2563EB] h-full rounded-full transition-all duration-300"
                   style={{ width: `${uploadProgress}%` }}
                 />
               </div>
 
-              <span className="text-xs font-mono font-bold text-neutral-800">
+              <span className="text-xs font-mono font-semibold text-stone-700">
                 {uploadProgress}% Upload Completed
               </span>
             </div>
           )}
 
-          {/* ========================================================================= */}
-          {/* STEP 4: UNLOCKED REWARD SCREEN                                           */}
-          {/* ========================================================================= */}
+          {/* STEP 4: UNLOCKED REWARD SCREEN */}
           {currentStep === 'REWARD_UNLOCKED' && (
             <div className="flex flex-col items-center text-center gap-5 py-2">
               {/* Success Icon */}
-              <div className="h-16 w-16 rounded-full bg-emerald-100 border-2 border-neutral-900 text-emerald-800 flex items-center justify-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+              <div className="h-16 w-16 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 flex items-center justify-center shadow-md">
                 <CheckCircle2 className="h-9 w-9" />
               </div>
 
               <div>
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 border border-neutral-900 text-emerald-900 text-xs font-mono font-bold uppercase mb-1.5">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-mono font-bold uppercase mb-1.5">
                   <Sparkles className="h-3.5 w-3.5 text-emerald-600" />
                   <span>Student Verification Approved</span>
                 </div>
-                <h3 className="font-serif font-bold text-2xl text-neutral-900">
+                <h3 className="font-serif font-bold text-2xl text-stone-900">
                   Your Student Perk is Unlocked!
                 </h3>
-                <p className="text-xs text-neutral-600 mt-1 font-sans max-w-md mx-auto">
+                <p className="text-xs text-stone-500 mt-1 font-sans max-w-md mx-auto">
                   Congratulations! We verified your student status with{' '}
-                  <strong className="text-neutral-900">{selectedSchool?.name || 'your institution'}</strong>.
+                  <strong className="text-stone-900">{selectedSchool?.name || 'your institution'}</strong>.
                 </p>
               </div>
 
               {/* Offer Summary Card */}
-              <div className="w-full bg-white border-2 border-neutral-900 rounded-2xl p-5 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] flex flex-col gap-4 text-left">
-                <div className="flex items-center justify-between border-b border-neutral-200 pb-3">
+              <div className="w-full bg-white border border-stone-200 rounded-2xl p-5 shadow-sm flex flex-col gap-4 text-left">
+                <div className="flex items-center justify-between border-b border-stone-100 pb-3">
                   <div>
-                    <span className="text-[11px] font-mono uppercase text-neutral-500 font-bold block">
+                    <span className="text-[11px] font-mono uppercase text-stone-400 font-semibold block">
                       Unlocked Reward
                     </span>
-                    <h4 className="font-bold text-sm text-neutral-900">{merchant.name}</h4>
+                    <h4 className="font-semibold text-sm text-stone-900">{merchant.name}</h4>
                   </div>
-                  <span className="text-xs font-mono font-bold px-2.5 py-1 rounded bg-amber-100 border border-neutral-900 text-neutral-900">
+                  <span className="text-xs font-semibold px-2.5 py-1 rounded-md bg-amber-50 border border-amber-200 text-amber-800">
                     {merchant.discountValue}
                   </span>
                 </div>
 
                 {/* Promo Code Box */}
                 <div>
-                  <label className="text-[11px] font-mono text-neutral-600 uppercase font-bold block mb-1.5">
+                  <label className="text-[11px] font-mono text-stone-600 uppercase font-semibold block mb-1.5">
                     Exclusive Single-Use Promo Code:
                   </label>
-                  <div className="flex items-stretch gap-2 bg-[#F5F1E9] border-2 border-neutral-900 rounded-xl p-2">
-                    <div className="flex-1 font-mono text-base font-bold text-neutral-900 px-3 py-1 flex items-center select-all">
+                  <div className="flex items-stretch gap-2 bg-[#FAF9F6] border border-stone-200 rounded-xl p-2">
+                    <div className="flex-1 font-mono text-base font-bold text-stone-900 px-3 py-1 flex items-center select-all">
                       {unlockedRewardCode || 'EDU-SPOTIFY-8X29K'}
                     </div>
 
                     <button
                       type="button"
                       onClick={handleCopyPromoCode}
-                      className="px-4 py-2 bg-neutral-900 hover:bg-neutral-800 text-white rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 transition cursor-pointer shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] shrink-0"
+                      className="px-4 py-2 bg-stone-900 hover:bg-stone-800 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer shadow-xs shrink-0"
                     >
                       {copiedCode ? (
                         <>
@@ -1083,7 +1073,7 @@ export default function VerificationWizardModal({
                   </div>
                 </div>
 
-                <p className="text-[11px] text-neutral-600 font-sans">
+                <p className="text-[11px] text-stone-500 font-sans">
                   {merchant.tagline}. Valid for the 2026-2027 academic year.
                 </p>
               </div>
@@ -1094,7 +1084,7 @@ export default function VerificationWizardModal({
                   href={merchant.partnerUrl || `https://${merchant.domain}`}
                   target="_blank"
                   rel="noreferrer"
-                  className="flex-1 w-full py-3 px-4 bg-neutral-900 hover:bg-neutral-800 text-white border-2 border-neutral-900 rounded-xl text-xs font-mono font-bold flex items-center justify-center gap-2 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition cursor-pointer"
+                  className="flex-1 w-full py-3 px-4 bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-2 shadow-sm transition cursor-pointer"
                 >
                   <span>Apply at Checkout ({merchant.domain})</span>
                   <ExternalLink className="h-3.5 w-3.5" />
@@ -1103,7 +1093,7 @@ export default function VerificationWizardModal({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="w-full sm:w-auto py-3 px-6 bg-white hover:bg-neutral-100 text-neutral-900 border-2 border-neutral-900 rounded-xl text-xs font-mono font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition cursor-pointer"
+                  className="w-full sm:w-auto py-3 px-6 bg-white hover:bg-stone-50 text-stone-700 border border-stone-200 rounded-xl text-xs font-semibold shadow-xs transition cursor-pointer"
                 >
                   Done
                 </button>
@@ -1115,3 +1105,4 @@ export default function VerificationWizardModal({
     </div>
   );
 }
+

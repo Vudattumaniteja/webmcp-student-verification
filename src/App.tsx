@@ -8,12 +8,33 @@ import Header from './components/Header.tsx';
 import MerchantShowcase from './components/MerchantShowcase.tsx';
 import VaultManager from './components/VaultManager.tsx';
 import AgentChat from './components/AgentChat.tsx';
+import { ArrowLeft, GraduationCap, ShieldCheck } from 'lucide-react';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<'directory' | 'vault' | 'agent'>('directory');
   const [hasWebMCP, setHasWebMCP] = useState(false);
+  const [activePersona, setActivePersona] = useState(() => {
+    const profile = globalVault.getProfile();
+    return {
+      name: profile.fullName,
+      university: profile.universityName,
+      avatarInitials: `${profile.firstName[0]}${profile.lastName[0]}`,
+    };
+  });
 
   const tools = useMemo(() => createAllWebMCPTools(globalVerificationEngine, globalVault), []);
+
+  // Listen to vault preset switches for active persona badge
+  useEffect(() => {
+    const unsubscribe = globalVault.subscribe((newState) => {
+      setActivePersona({
+        name: newState.profile.fullName,
+        university: newState.profile.universityName,
+        avatarInitials: `${newState.profile.firstName[0]}${newState.profile.lastName[0]}`,
+      });
+    });
+    return () => unsubscribe();
+  }, []);
 
   // Register WebMCP Tools in Browser DOM (document.modelContext)
   useEffect(() => {
@@ -106,17 +127,17 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F9F8F3] text-neutral-900 flex flex-col font-sans selection:bg-[#0066FF] selection:text-white">
-      {/* Editorial Header */}
-
+    <div className="min-h-screen bg-[#FAF9F6] text-stone-900 flex flex-col font-sans selection:bg-[#2563EB] selection:text-white">
+      {/* Modern Editorial Header */}
       <Header
         activeTab={activeTab}
         onSelectTab={handleTabSelect}
         hasWebMCP={hasWebMCP}
+        activePersona={activePersona}
       />
 
       {/* Main Workspace Layout */}
-      <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+      <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         {activeTab === 'directory' && (
           <MerchantShowcase
             store={globalMerchantStore}
@@ -130,13 +151,14 @@ export default function App() {
 
         {activeTab === 'vault' && (
           <div className="flex flex-col gap-5">
-            <div className="flex justify-end">
+            <div className="flex justify-start">
               <button
                 type="button"
                 onClick={() => setActiveTab('directory')}
-                className="px-3.5 py-1.5 rounded-lg border-2 border-neutral-900 bg-white hover:bg-neutral-100 font-mono text-xs font-bold text-neutral-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition cursor-pointer"
+                className="px-4 py-2 rounded-xl border border-stone-200 bg-white hover:bg-stone-50 font-medium text-xs text-stone-700 shadow-xs transition cursor-pointer flex items-center gap-1.5 active:scale-98"
               >
-                ← Back to Directory
+                <ArrowLeft className="h-3.5 w-3.5" />
+                <span>Back to Perks Directory</span>
               </button>
             </div>
 
@@ -146,13 +168,14 @@ export default function App() {
 
         {activeTab === 'agent' && (
           <div className="flex flex-col gap-5 max-w-4xl mx-auto">
-            <div className="flex justify-end">
+            <div className="flex justify-start">
               <button
                 type="button"
                 onClick={() => setActiveTab('directory')}
-                className="px-3.5 py-1.5 rounded-lg border-2 border-neutral-900 bg-white hover:bg-neutral-100 font-mono text-xs font-bold text-neutral-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition cursor-pointer"
+                className="px-4 py-2 rounded-xl border border-stone-200 bg-white hover:bg-stone-50 font-medium text-xs text-stone-700 shadow-xs transition cursor-pointer flex items-center gap-1.5 active:scale-98"
               >
-                ← Back to Directory
+                <ArrowLeft className="h-3.5 w-3.5" />
+                <span>Back to Perks Directory</span>
               </button>
             </div>
 
@@ -161,20 +184,71 @@ export default function App() {
         )}
       </main>
 
-      {/* Editorial Footer */}
-      <footer className="border-t border-neutral-900/20 bg-[#F9F8F3] px-6 py-6 text-xs font-mono text-neutral-600 flex flex-col sm:flex-row items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <span>© 2026 WebMCP</span>
-          <span>•</span>
-          <span className="hover:underline cursor-pointer">/api-docs</span>
-          <span>•</span>
-          <span className="hover:underline cursor-pointer">/privacy</span>
-        </div>
+      {/* Modern Editorial Footer */}
+      <footer className="border-t border-stone-200 bg-[#FAF9F6] px-6 lg:px-8 py-8 text-xs font-sans text-stone-500 mt-auto">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-2.5">
+            <div className="h-6 w-6 rounded-lg bg-blue-50 border border-blue-200 text-[#2563EB] flex items-center justify-center">
+              <GraduationCap className="h-3.5 w-3.5" />
+            </div>
+            <span className="font-serif font-bold text-stone-900">
+              WebMCP Student Perks &amp; Verification Protocol
+            </span>
+          </div>
 
-        <div>
-          <span>updated as new sites ship WebMCP —</span>
+          <div className="flex flex-wrap items-center gap-4 text-xs font-medium text-stone-600">
+            <a
+              href="#directory"
+              onClick={(e) => {
+                e.preventDefault();
+                handleTabSelect('directory');
+              }}
+              className="hover:text-stone-900 transition cursor-pointer"
+            >
+              Perks Directory
+            </a>
+            <span>•</span>
+            <a
+              href="#vault"
+              onClick={(e) => {
+                e.preventDefault();
+                handleTabSelect('vault');
+              }}
+              className="hover:text-stone-900 transition cursor-pointer"
+            >
+              Student Vault
+            </a>
+            <span>•</span>
+            <a
+              href="#agent"
+              onClick={(e) => {
+                e.preventDefault();
+                handleTabSelect('agent');
+              }}
+              className="hover:text-stone-900 transition cursor-pointer"
+            >
+              AI Agent Workspace
+            </a>
+            <span>•</span>
+            <a
+              href="#faq"
+              onClick={(e) => {
+                e.preventDefault();
+                handleTabSelect('faq');
+              }}
+              className="hover:text-stone-900 transition cursor-pointer"
+            >
+              Privacy &amp; Security
+            </a>
+          </div>
+
+          <div className="flex items-center gap-2 font-mono text-[11px] text-stone-400">
+            <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
+            <span>Zero-PII Client Sandboxed</span>
+          </div>
         </div>
       </footer>
     </div>
   );
 }
+
