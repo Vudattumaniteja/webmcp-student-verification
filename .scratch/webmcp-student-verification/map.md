@@ -10,6 +10,7 @@ A complete interactive web application showcasing simulated student discount mer
 
 ## Decisions so far
 <!-- the index: one line per closed ticket, enough to judge relevance, then zoom the link for the detail the ticket holds -->
+- [Student Vault & Zero-PII Security Model](file:///C:/Users/Manit/projects/web-mcp-challange/web-mcp/.scratch/webmcp-student-verification/issues/02-student-vault-security-model.md): Use handle-based claim-check architecture with IndexedDB and 4 presets for instant, expired, and illegible document recovery testing.
 
 ## Not yet specified
 <!-- in-scope fog that will graduate as the frontier advances -->
