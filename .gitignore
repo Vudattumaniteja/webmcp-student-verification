@@ -26,6 +26,8 @@ lerna-debug.log*
 *.log
 .system_generated/
 tasks/
+.scratch/
+.worktrees/
 
 # Environment & Secret shield
 .env
