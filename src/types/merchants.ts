@@ -7,16 +7,20 @@ export type MerchantVerificationStatus =
 
 export type MerchantCategory =
   | 'All'
+  | 'AI & DEV'
+  | 'MUSIC & STREAMING'
+  | 'CLOUD & INFRA'
+  | 'PRODUCTIVITY'
   | 'AI & Research'
   | 'Music & Audio'
   | 'Cloud & DevOps'
-  | 'Productivity'
   | 'Streaming';
 
 export interface MerchantPerk {
   id: string;
   name: string;
   brand: string;
+  domain: string;
   tagline: string;
   category: string;
   regularPrice: string;
@@ -28,9 +32,9 @@ export interface MerchantPerk {
   status: MerchantVerificationStatus;
   rewardCode?: string;
   errorMessage?: string;
-  brandGradient: string;
-  accentColor: string;
-  logoIcon: 'bot' | 'music' | 'cloud' | 'file-text' | 'play';
+  brandGradient?: string;
+  accentColor?: string;
+  logoIcon?: 'bot' | 'music' | 'cloud' | 'file-text' | 'play' | 'code' | 'figma' | 'sparkles' | 'globe' | string;
   partnerUrl?: string;
   updatedAt?: string;
 }
@@ -39,3 +43,4 @@ export interface MerchantStoreState {
   merchants: MerchantPerk[];
   selectedCategory: string;
 }
+

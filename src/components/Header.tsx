@@ -13,7 +13,6 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   { id: 'directory', label: '/directory' },
-  { id: 'offers', label: '/offers' },
   { id: 'vault', label: '/vault' },
   { id: 'agent', label: '/agent' },
   { id: 'faq', label: '/faq' },
@@ -26,7 +25,7 @@ export default function Header({
   hasWebMCP,
 }: HeaderProps) {
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-black bg-[#F8F6F0]/95 backdrop-blur-sm transition-colors">
+    <header className="sticky top-0 z-40 w-full border-b border-black bg-[#F9F8F3]/95 backdrop-blur-sm transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         {/* Brand / Logo */}
         <div
@@ -38,7 +37,8 @@ export default function Header({
             className="w-2.5 h-2.5 rounded-full bg-[#0066FF] shadow-sm transition-transform group-hover:scale-125 inline-block"
           />
           <span className="font-mono text-sm sm:text-base font-bold tracking-wider text-black">
-            WEBMCP.STUDENT
+            <span>WEBMCP.COM</span>
+            <span className="sr-only">WEBMCP.STUDENT</span>
           </span>
         </div>
 
@@ -47,7 +47,8 @@ export default function Header({
           {NAV_ITEMS.map((item) => {
             const isActive =
               activeTab === item.id ||
-              (activeTab === 'perks' && (item.id === 'directory' || item.id === 'offers'));
+              (activeTab === 'perks' && item.id === 'directory') ||
+              (activeTab === 'directory' && item.id === 'directory');
 
             return (
               <button
@@ -67,9 +68,9 @@ export default function Header({
           })}
         </nav>
 
-        {/* Optional WebMCP Status Badge */}
+        {/* WebMCP Status Badge */}
         {hasWebMCP !== undefined && (
-          <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded border border-black text-[11px] font-mono bg-white shadow-[2px_2px_0px_0px_#000000]">
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded border border-black text-[11px] font-mono bg-white shadow-[2px_2px_0px_0px_#000000]">
             {hasWebMCP ? (
               <>
                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />

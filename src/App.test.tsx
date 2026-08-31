@@ -14,15 +14,17 @@ describe('WebMCP Student Verification App', () => {
     globalVerificationEngine.reset();
   });
 
-  it('renders application header and branding', async () => {
+  it('renders application header and editorial navigation links', async () => {
     render(<App />);
     await waitFor(() => {
-      expect(screen.getByText('WebMCP Student Verification')).toBeInTheDocument();
-      expect(screen.getByText(/Student Identity Vault, Multi-Merchant Perks & Autonomous Verification Suite/i)).toBeInTheDocument();
+      expect(screen.getByText('WEBMCP.COM')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: '/directory' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: '/vault' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: '/agent' })).toBeInTheDocument();
     });
   });
 
-  it('detects and displays WebMCP status badge', async () => {
+  it('detects and displays WebMCP native badge', async () => {
     render(<App />);
     await waitFor(() => {
       const elements = screen.getAllByText(/WebMCP/i);
@@ -30,77 +32,52 @@ describe('WebMCP Student Verification App', () => {
     });
   });
 
-  it('renders student document vault tab by default', async () => {
+  it('renders perks directory by default matching editorial aesthetic', async () => {
     render(<App />);
     await waitFor(() => {
-      expect(screen.getByText(/Zero-PII Claim-Check Architecture/i)).toBeInTheDocument();
-      expect(screen.getByText(/Interactive Demo Student Presets/i)).toBeInTheDocument();
+      expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/The WebMCP Directory/i);
+      expect(screen.getByText(/spotify\.com/i)).toBeInTheDocument();
+      expect(screen.getByText(/openai\.com/i)).toBeInTheDocument();
     });
   });
 
-  it('switches to perks showcase tab and renders merchant perk cards', async () => {
+  it('switches to student vault tab and renders vault presets and documents', async () => {
     render(<App />);
-    const perksTab = screen.getByRole('button', { name: /Perks Showcase/i });
-    fireEvent.click(perksTab);
+    const vaultNavBtn = screen.getByRole('button', { name: '/vault' });
+    fireEvent.click(vaultNavBtn);
 
     await waitFor(() => {
-      expect(screen.getByText(/Multi-Merchant Student Perks Hub/i)).toBeInTheDocument();
-      expect(screen.getByText(/OpenAI ChatGPT Plus/i)).toBeInTheDocument();
-      expect(screen.getByText(/Spotify Premium Student/i)).toBeInTheDocument();
-      expect(screen.getByText(/AWS Educate/i)).toBeInTheDocument();
+      expect(screen.getByText(/Student Identity Vault/i)).toBeInTheDocument();
+      expect(screen.getByText(/Zero-PII Claim-Check Architecture/i)).toBeInTheDocument();
     });
   });
 
   it('switches to verification agent tab and renders agent workspace', async () => {
     render(<App />);
-    const agentTab = screen.getByRole('button', { name: /Verification Agent/i });
-    fireEvent.click(agentTab);
+    const agentNavBtn = screen.getByRole('button', { name: '/agent' });
+    fireEvent.click(agentNavBtn);
 
     await waitFor(() => {
       expect(screen.getAllByText(/Autonomous Verification Agent/i).length).toBeGreaterThan(0);
     });
   });
 
-  it('connects Claim with WebMCP button on merchant card to autonomous agent', async () => {
+  it('opens authentic verification wizard when "Verify & Claim" is clicked', async () => {
     render(<App />);
-    const perksTab = screen.getByRole('button', { name: /Perks Showcase/i });
-    fireEvent.click(perksTab);
 
-    await waitFor(() => {
-      expect(screen.getByText(/Multi-Merchant Student Perks Hub/i)).toBeInTheDocument();
-    });
-
-    const claimButtons = screen.getAllByRole('button', { name: /Claim with WebMCP/i });
+    const claimButtons = screen.getAllByRole('button', { name: /Verify & Claim/i });
     expect(claimButtons.length).toBeGreaterThan(0);
     fireEvent.click(claimButtons[0]);
 
     await waitFor(() => {
-      expect(screen.getAllByText(/Starting automated student verification/i).length).toBeGreaterThan(0);
+      expect(screen.getByText(/Select Your Higher Education Institution/i)).toBeInTheDocument();
     });
   });
 
-  it('renders registered tools list including verification and vault tools', async () => {
+  it('does not render ugly developer debug panels in the main user-facing directory UI', () => {
     render(<App />);
-    await waitFor(() => {
-      expect(screen.getByText(/Exposed Agent Tools/i)).toBeInTheDocument();
-      expect(screen.getAllByText('search_school').length).toBeGreaterThan(0);
-      expect(screen.getAllByText('submit_student_verification').length).toBeGreaterThan(0);
-      expect(screen.getAllByText('upload_vault_document').length).toBeGreaterThan(0);
-      expect(screen.getAllByText('check_verification_status').length).toBeGreaterThan(0);
-      expect(screen.getAllByText('get_student_vault_profile').length).toBeGreaterThan(0);
-      expect(screen.getAllByText('list_vault_documents').length).toBeGreaterThan(0);
-      expect(screen.getAllByText('switch_demo_preset').length).toBeGreaterThan(0);
-    });
-  });
-
-  it('executes tool in test runner and logs to activity feed', async () => {
-    render(<App />);
-    const executeBtn = screen.getByRole('button', { name: /Execute Tool/i });
-    fireEvent.click(executeBtn);
-
-    await waitFor(() => {
-      expect(screen.getByText(/Real-Time Activity Feed/i)).toBeInTheDocument();
-      expect(screen.getAllByText(/Executing tool test/i).length).toBeGreaterThan(0);
-    });
+    expect(screen.queryByText(/Exposed Agent Tools/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Test In-App Runner/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Real-Time Activity Feed/i)).not.toBeInTheDocument();
   });
 });

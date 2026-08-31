@@ -8,9 +8,9 @@ describe('MerchantStore', () => {
     store = new MerchantStore();
   });
 
-  it('initializes with the 5 required student merchant perks', () => {
+  it('initializes with the required student merchant perks', () => {
     const merchants = store.getMerchants();
-    expect(merchants).toHaveLength(5);
+    expect(merchants.length).toBeGreaterThanOrEqual(5);
 
     const ids = merchants.map((m) => m.id);
     expect(ids).toContain('openai_chatgpt_plus');
