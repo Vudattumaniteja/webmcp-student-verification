@@ -1,5 +1,9 @@
 import '@testing-library/jest-dom';
 
+if (typeof window !== 'undefined' && window.HTMLElement) {
+  window.HTMLElement.prototype.scrollIntoView = () => {};
+}
+
 // Polyfill / Mock document.modelContext for jsdom test runner
 if (typeof document !== 'undefined' && !('modelContext' in document)) {
   const tools = new Map<string, any>();
