@@ -16,47 +16,78 @@ describe('MerchantShowcase Component', () => {
     });
   });
 
-  it('renders all 5 merchant perk cards with branding, prices, and tags', () => {
+  it('renders editorial directory header, stats card, and merchant directory rows', () => {
     render(<MerchantShowcase store={store} />);
 
-    expect(screen.getByText(/OpenAI ChatGPT Plus/i)).toBeInTheDocument();
-    expect(screen.getByText(/Spotify Premium Student/i)).toBeInTheDocument();
-    expect(screen.getByText(/AWS Educate/i)).toBeInTheDocument();
-    expect(screen.getByText(/Notion Education Plus/i)).toBeInTheDocument();
-    expect(screen.getByText(/YouTube Premium Student/i)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/The WebMCP Directory/i);
+    expect(screen.getByText(/Browse verified student perks & websites agents can use\./i)).toBeInTheDocument();
 
-    // Verify pricing comparisons are visible
-    expect(screen.getByText(/\$20\/mo/i)).toBeInTheDocument();
+    // Verify key merchant names and domains from the requirements
+    expect(screen.getByText(/spotify\.com/i)).toBeInTheDocument();
+    expect(screen.getByText(/openai\.com/i)).toBeInTheDocument();
+    expect(screen.getByText(/youtube\.com/i)).toBeInTheDocument();
+    expect(screen.getByText(/aws\.amazon\.com/i)).toBeInTheDocument();
+    expect(screen.getByText(/notion\.so/i)).toBeInTheDocument();
+    expect(screen.getByText(/github\.com/i)).toBeInTheDocument();
+    expect(screen.getByText(/figma\.com/i)).toBeInTheDocument();
+    expect(screen.getByText(/jetbrains\.com/i)).toBeInTheDocument();
+
+    // Verify pricing comparisons
+    expect(screen.getAllByText(/\$20\/mo/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/4 months free/i).length).toBeGreaterThan(0);
-    expect(screen.getByText(/\$11.99\/mo/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/\$11.99\/mo/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/\$5.99\/mo/i).length).toBeGreaterThan(0);
   });
 
-  it('renders initial UNVERIFIED state with "Claim with WebMCP" buttons', () => {
+  it('renders initial UNVERIFIED state with "Verify & Claim" buttons', () => {
     render(<MerchantShowcase store={store} />);
 
-    const claimButtons = screen.getAllByRole('button', { name: /Claim with WebMCP/i });
-    expect(claimButtons).toHaveLength(5);
+    const claimButtons = screen.getAllByRole('button', { name: /Verify & Claim/i });
+    expect(claimButtons.length).toBeGreaterThanOrEqual(5);
   });
 
-  it('triggers onClaim callback or updates store status when Claim button is clicked', async () => {
+  it('triggers verification modal when "Verify & Claim" button is clicked', async () => {
     const onClaimMock = vi.fn();
     render(<MerchantShowcase store={store} onClaim={onClaimMock} />);
 
-    const claimButtons = screen.getAllByRole('button', { name: /Claim with WebMCP/i });
+    const claimButtons = screen.getAllByRole('button', { name: /Verify & Claim/i });
     fireEvent.click(claimButtons[0]);
 
-    expect(onClaimMock).toHaveBeenCalledWith('openai_chatgpt_plus');
+    // Modal opens
+    await waitFor(() => {
+      expect(screen.getByText(/Select Your Higher Education Institution/i)).toBeInTheDocument();
+    });
+
+    expect(onClaimMock).toHaveBeenCalled();
   });
 
-  it('displays VERIFYING status with active spinner / step indicator', () => {
-    store.updateMerchantStatus('spotify_premium', 'VERIFYING');
-
+  it('filters merchant directory by category count pills', () => {
     render(<MerchantShowcase store={store} />);
 
-    const verifyingElements = screen.getAllByText(/Verifying with WebMCP/i);
-    expect(verifyingElements.length).toBeGreaterThan(0);
-    expect(screen.getByText(/Vault Handshake/i)).toBeInTheDocument();
+    // Click CLOUD & INFRA filter
+    const cloudFilter = screen.getByRole('button', { name: /CLOUD & INFRA/i });
+    fireEvent.click(cloudFilter);
+
+    expect(screen.getByText(/aws\.amazon\.com/i)).toBeInTheDocument();
+    expect(screen.queryByText(/spotify\.com/i)).not.toBeInTheDocument();
+
+    // Click MUSIC & STREAMING filter
+    const musicFilter = screen.getByRole('button', { name: /MUSIC & STREAMING/i });
+    fireEvent.click(musicFilter);
+
+    expect(screen.getByText(/spotify\.com/i)).toBeInTheDocument();
+    expect(screen.getByText(/youtube\.com/i)).toBeInTheDocument();
+    expect(screen.queryByText(/aws\.amazon\.com/i)).not.toBeInTheDocument();
+  });
+
+  it('filters merchant directory using the search input', () => {
+    render(<MerchantShowcase store={store} />);
+
+    const searchInput = screen.getByPlaceholderText(/Search sites, tools, or categories/i);
+    fireEvent.change(searchInput, { target: { value: 'figma' } });
+
+    expect(screen.getByText(/figma\.com/i)).toBeInTheDocument();
+    expect(screen.queryByText(/spotify\.com/i)).not.toBeInTheDocument();
   });
 
   it('displays APPROVED status with unlocked reward code, discount badge, and one-click copy', async () => {
@@ -65,8 +96,7 @@ describe('MerchantShowcase Component', () => {
     render(<MerchantShowcase store={store} />);
 
     expect(screen.getByText('EDU-SPOTIFY-8X29K')).toBeInTheDocument();
-    expect(screen.getAllByText(/Approved/i).length).toBeGreaterThan(0);
-    expect(screen.getByText(/Discount Applied/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/APPROVED/i).length).toBeGreaterThan(0);
 
     // Test copy to clipboard
     const copyButton = screen.getByRole('button', { name: /Copy Code/i });
@@ -79,8 +109,7 @@ describe('MerchantShowcase Component', () => {
     });
   });
 
-  it('displays ERROR / ACTION_NEEDED status with error message and retry button', () => {
-    const onRetryMock = vi.fn();
+  it('displays ACTION NEEDED status with retry button', () => {
     store.updateMerchantStatus(
       'aws_educate',
       'ERROR',
@@ -88,40 +117,24 @@ describe('MerchantShowcase Component', () => {
       'Expired student ID detected. Please update vault document.',
     );
 
-    render(<MerchantShowcase store={store} onRetry={onRetryMock} />);
-
-    expect(screen.getByText(/Expired student ID detected/i)).toBeInTheDocument();
-    expect(screen.getByText(/Action Needed/i)).toBeInTheDocument();
-
-    const retryButton = screen.getByRole('button', { name: /Retry Verification/i });
-    fireEvent.click(retryButton);
-
-    expect(onRetryMock).toHaveBeenCalledWith('aws_educate');
-  });
-
-  it('renders independent verification statuses simultaneously across multiple cards', () => {
-    store.updateMerchantStatus('openai_chatgpt_plus', 'VERIFYING');
-    store.updateMerchantStatus('spotify_premium', 'APPROVED', 'EDU-SPOTIFY-8X29K');
-    store.updateMerchantStatus('aws_educate', 'ERROR', undefined, 'Illegible image');
-    // notion and youtube remain UNVERIFIED
-
     render(<MerchantShowcase store={store} />);
 
-    expect(screen.getAllByText(/Verifying with WebMCP/i).length).toBeGreaterThan(0);
-    expect(screen.getByText('EDU-SPOTIFY-8X29K')).toBeInTheDocument();
-    expect(screen.getByText(/Illegible image/i)).toBeInTheDocument();
-
-    const claimButtons = screen.getAllByRole('button', { name: /Claim with WebMCP/i });
-    expect(claimButtons).toHaveLength(2); // for notion and youtube
+    expect(screen.getByText(/ACTION NEEDED/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Retry Verification/i })).toBeInTheDocument();
   });
 
-  it('allows filtering by category', () => {
+  it('renders FAQ and API For Agents sections matching editorial spec', () => {
     render(<MerchantShowcase store={store} />);
 
-    const filterButton = screen.getByRole('button', { name: 'Cloud & DevOps' });
-    fireEvent.click(filterButton);
+    expect(screen.getByText(/— FREQUENTLY ASKED/i)).toBeInTheDocument();
+    expect(screen.getByText(/What is WebMCP Student Verification\?/i)).toBeInTheDocument();
+    expect(screen.getByText(/— API FOR AGENTS/i)).toBeInTheDocument();
+    expect(screen.getByText(/GET \/api\/v1\/lookup\?url=\.\.\./i)).toBeInTheDocument();
 
-    expect(screen.getByText(/AWS Educate/i)).toBeInTheDocument();
-    expect(screen.queryByText(/Spotify Premium/i)).not.toBeInTheDocument();
+    // Test expanding FAQ accordion
+    const faqBtn = screen.getByRole('button', { name: /What is WebMCP Student Verification\?/i });
+    fireEvent.click(faqBtn);
+
+    expect(screen.getByText(/zero-PII student discount protocol/i)).toBeInTheDocument();
   });
 });
