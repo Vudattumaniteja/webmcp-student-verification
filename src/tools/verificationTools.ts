@@ -1,5 +1,6 @@
 import { searchSchools } from '../services/schoolSearch';
 import { VerificationEngine, globalVerificationEngine } from '../services/verificationEngine';
+import { StudentVault, globalVault } from '../services/vault';
 
 export interface WebMCPToolDefinition {
   name: string;
@@ -19,6 +20,7 @@ export interface WebMCPToolDefinition {
 
 export function createVerificationTools(
   engine: VerificationEngine = globalVerificationEngine,
+  vault: StudentVault = globalVault,
 ): WebMCPToolDefinition[] {
   return [
     {
@@ -61,7 +63,7 @@ export function createVerificationTools(
         };
 
         const json = JSON.stringify(formatted);
-        // Truncate safely if it ever exceeds 450 characters
+        // Truncate safely if it ever exceeds 440 characters
         if (json.length > 440) {
           return JSON.stringify({
             query,
@@ -155,6 +157,151 @@ export function createVerificationTools(
         } catch (err: any) {
           return JSON.stringify({
             error: err.message || 'Verification submission failed',
+          });
+        }
+      },
+    },
+
+    {
+      name: 'upload_vault_document',
+      title: 'Upload Vault Document',
+      description:
+        'Uploads a proof document from the local student vault to the verification authority via pre-signed URL without leaking binary data.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          verificationId: {
+            type: 'string',
+            description: 'Active verification session ID (e.g. "ver_12345")',
+          },
+          documentId: {
+            type: 'string',
+            description: 'Vault document handle ID (e.g. "doc_stan_id_2026")',
+          },
+        },
+        required: ['verificationId', 'documentId'],
+      },
+      annotations: {
+        readOnlyHint: false,
+        untrustedContentHint: false,
+      },
+      execute: async (input: { verificationId: string; documentId: string }) => {
+        try {
+          if (!input?.verificationId || !input?.documentId) {
+            return JSON.stringify({
+              error: 'verificationId and documentId are required parameters',
+            });
+          }
+
+          const session = engine.getSession(input.verificationId);
+          if (!session) {
+            return JSON.stringify({
+              error: `Verification session not found for ID "${input.verificationId}"`,
+            });
+          }
+
+          const docBlob = await vault.getDocumentBlob(input.documentId);
+          if (!docBlob) {
+            return JSON.stringify({
+              error: `Document "${input.documentId}" not found in vault.`,
+            });
+          }
+
+          const metadata = vault.getDocumentMetadata(input.documentId);
+          const result = engine.uploadDocumentDirect(input.verificationId, docBlob, metadata);
+
+          if (result.status === 'APPROVED') {
+            return JSON.stringify({
+              verificationId: result.verificationId,
+              documentId: input.documentId,
+              status: result.status,
+              rewardCode: result.rewardCode,
+              message: 'Document uploaded and verified successfully.',
+            });
+          }
+
+          return JSON.stringify({
+            verificationId: result.verificationId,
+            documentId: input.documentId,
+            status: result.status,
+            rejectionCode: result.rejectionCode,
+            rejectionReason: result.rejectionReason,
+            remedyText: result.remedyText,
+          });
+        } catch (err: any) {
+          return JSON.stringify({
+            error: err.message || 'Document upload failed',
+          });
+        }
+      },
+    },
+
+    {
+      name: 'check_verification_status',
+      title: 'Check Verification Status',
+      description:
+        'Checks the real-time status and outcome of an in-progress or completed student verification session.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          verificationId: {
+            type: 'string',
+            description: 'Verification session ID to check',
+          },
+        },
+        required: ['verificationId'],
+      },
+      annotations: {
+        readOnlyHint: true,
+        untrustedContentHint: false,
+      },
+      execute: async (input: { verificationId: string }) => {
+        try {
+          if (!input?.verificationId) {
+            return JSON.stringify({
+              error: 'verificationId is required',
+            });
+          }
+
+          const session = engine.getSession(input.verificationId);
+          if (!session) {
+            return JSON.stringify({
+              error: `Verification session not found for ID "${input.verificationId}"`,
+            });
+          }
+
+          const responsePayload: Record<string, any> = {
+            verificationId: session.verificationId,
+            status: session.status,
+            currentStep: session.currentStep,
+          };
+
+          if (session.rewardCode) {
+            responsePayload.rewardCode = session.rewardCode;
+          }
+          if (session.rejectionCode) {
+            responsePayload.rejectionCode = session.rejectionCode;
+          }
+          if (session.rejectionReason) {
+            responsePayload.rejectionReason = session.rejectionReason;
+          }
+          if (session.remedyText && session.remedyText !== session.rejectionReason) {
+            responsePayload.remedyText = session.remedyText;
+          }
+          if (session.uploadUrl && session.status === 'PENDING_DOCS') {
+            responsePayload.uploadUrl = session.uploadUrl;
+          }
+
+          if (session.status === 'APPROVED') {
+            responsePayload.message = `Verification approved. Reward code: ${session.rewardCode}`;
+          } else if (session.status === 'PENDING_DOCS') {
+            responsePayload.message = `Proof of enrollment required for ${session.schoolName}.`;
+          }
+
+          return JSON.stringify(responsePayload);
+        } catch (err: any) {
+          return JSON.stringify({
+            error: err.message || 'Status check failed',
           });
         }
       },

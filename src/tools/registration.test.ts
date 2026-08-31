@@ -15,7 +15,7 @@ describe('WebMCP document.modelContext Registration', () => {
 
     const vault = new StudentVault();
     const tools = [
-      ...createVerificationTools(globalVerificationEngine),
+      ...createVerificationTools(globalVerificationEngine, vault),
       ...createVaultTools(vault),
     ];
     for (const tool of tools) {
@@ -34,16 +34,18 @@ describe('WebMCP document.modelContext Registration', () => {
 
     expect(names).toContain('search_school');
     expect(names).toContain('submit_student_verification');
+    expect(names).toContain('upload_vault_document');
+    expect(names).toContain('check_verification_status');
     expect(names).toContain('get_student_vault_profile');
     expect(names).toContain('list_vault_documents');
     expect(names).toContain('switch_demo_preset');
   });
 
-  it('should execute registered tools via document.modelContext.executeTool', async () => {
+  it('should execute registered tools via document.modelContext.executeTool for instant and document upload paths', async () => {
     const modelContext = (document as any).modelContext;
-    const vault = new StudentVault();
+    const vault = new StudentVault('STANFORD_VALID');
     const tools = [
-      ...createVerificationTools(globalVerificationEngine),
+      ...createVerificationTools(globalVerificationEngine, vault),
       ...createVaultTools(vault),
     ];
     for (const tool of tools) {
@@ -57,15 +59,16 @@ describe('WebMCP document.modelContext Registration', () => {
       });
     }
 
+    // 1. Search school
     const searchResultStr = await modelContext.executeTool(
       { name: 'search_school' },
       JSON.stringify({ query: 'Harvard' }),
     );
-
     const parsedSearch = JSON.parse(searchResultStr);
     expect(parsedSearch.schools[0].id).toBe('sch_harvard_003');
 
-    const submitResultStr = await modelContext.executeTool(
+    // 2. Submit instant match (MIT)
+    const submitInstantStr = await modelContext.executeTool(
       { name: 'submit_student_verification' },
       JSON.stringify({
         schoolId: 'sch_mit_001',
@@ -75,17 +78,52 @@ describe('WebMCP document.modelContext Registration', () => {
         merchantId: 'notion_education',
       }),
     );
+    const parsedInstant = JSON.parse(submitInstantStr);
+    expect(parsedInstant.status).toBe('APPROVED');
+    expect(parsedInstant.rewardCode).toBeDefined();
 
-    const parsedSubmit = JSON.parse(submitResultStr);
-    expect(parsedSubmit.status).toBe('APPROVED');
-    expect(parsedSubmit.rewardCode).toBeDefined();
-
-    const vaultDocsStr = await modelContext.executeTool(
-      { name: 'list_vault_documents' },
-      JSON.stringify({}),
+    // 3. Submit fallback match requiring doc upload (Stanford)
+    const submitFallbackStr = await modelContext.executeTool(
+      { name: 'submit_student_verification' },
+      JSON.stringify({
+        schoolId: 'sch_stanford_002',
+        firstName: 'Alex',
+        lastName: 'Chen',
+        email: 'alex.chen@stanford.edu',
+        merchantId: 'spotify_premium',
+      }),
     );
-    const parsedDocs = JSON.parse(vaultDocsStr);
-    expect(Array.isArray(parsedDocs)).toBe(true);
-    expect(parsedDocs.length).toBeGreaterThan(0);
+    const parsedFallback = JSON.parse(submitFallbackStr);
+    expect(parsedFallback.status).toBe('PENDING_DOCS');
+    const verificationId = parsedFallback.verificationId;
+
+    // 4. Check status before upload
+    const statusBeforeStr = await modelContext.executeTool(
+      { name: 'check_verification_status' },
+      JSON.stringify({ verificationId }),
+    );
+    const parsedStatusBefore = JSON.parse(statusBeforeStr);
+    expect(parsedStatusBefore.status).toBe('PENDING_DOCS');
+
+    // 5. Upload document via handle
+    const uploadStr = await modelContext.executeTool(
+      { name: 'upload_vault_document' },
+      JSON.stringify({
+        verificationId,
+        documentId: 'doc_stan_id_2026',
+      }),
+    );
+    const parsedUpload = JSON.parse(uploadStr);
+    expect(parsedUpload.status).toBe('APPROVED');
+    expect(parsedUpload.rewardCode).toBeDefined();
+
+    // 6. Check status after upload
+    const statusAfterStr = await modelContext.executeTool(
+      { name: 'check_verification_status' },
+      JSON.stringify({ verificationId }),
+    );
+    const parsedStatusAfter = JSON.parse(statusAfterStr);
+    expect(parsedStatusAfter.status).toBe('APPROVED');
+    expect(parsedStatusAfter.rewardCode).toBe(parsedUpload.rewardCode);
   });
 });

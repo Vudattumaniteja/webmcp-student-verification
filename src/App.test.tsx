@@ -43,6 +43,8 @@ describe('WebMCP Student Identity & Architecture Studio App', () => {
       expect(screen.getByText(/Exposed Agent Tools/i)).toBeInTheDocument();
       expect(screen.getByText('search_school')).toBeInTheDocument();
       expect(screen.getByText('submit_student_verification')).toBeInTheDocument();
+      expect(screen.getByText('upload_vault_document')).toBeInTheDocument();
+      expect(screen.getByText('check_verification_status')).toBeInTheDocument();
       expect(screen.getByText('get_student_vault_profile')).toBeInTheDocument();
       expect(screen.getAllByText('list_vault_documents').length).toBeGreaterThan(0);
       expect(screen.getByText('switch_demo_preset')).toBeInTheDocument();
