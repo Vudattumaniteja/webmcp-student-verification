@@ -3,6 +3,8 @@ import { globalStore, ArchitectureState, NodeType, SecurityIssue } from './share
 import { createArchitectureTools } from './shared/tools.ts';
 import { globalVault } from './services/vault.ts';
 import { createVaultTools } from './services/vaultTools.ts';
+import { globalVerificationEngine } from './services/verificationEngine.ts';
+import { createVerificationTools } from './tools/verificationTools.ts';
 import VaultManager from './components/VaultManager.tsx';
 import ArchitectureCanvas from './components/ArchitectureCanvas.tsx';
 import NodeInspector from './components/NodeInspector.tsx';
@@ -38,9 +40,18 @@ export default function App() {
 
   const archTools = useMemo(() => createArchitectureTools(), []);
   const vaultTools = useMemo(() => createVaultTools(globalVault), []);
+  const verificationTools = useMemo(() => createVerificationTools(globalVerificationEngine), []);
 
   const allTools = useMemo(() => {
     return [
+      ...verificationTools.map((vt) => ({
+        ...vt,
+        execute: async (input: any, _store?: any, callerSource: 'WebMCP' | 'UI' = 'WebMCP') => {
+          const res = await vt.execute(input);
+          globalStore.addLog(callerSource, `[${vt.name}] ${res}`);
+          return res;
+        },
+      })),
       ...vaultTools.map((vt) => ({
         ...vt,
         execute: async (input: any, _store?: any, callerSource: 'WebMCP' | 'UI' = 'WebMCP') => {
@@ -51,7 +62,7 @@ export default function App() {
       })),
       ...archTools,
     ];
-  }, [archTools, vaultTools]);
+  }, [archTools, vaultTools, verificationTools]);
 
   // 1. Subscribe to Store State Updates
   useEffect(() => {
