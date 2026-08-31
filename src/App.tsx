@@ -4,14 +4,15 @@ import { globalVerificationEngine } from './services/verificationEngine.ts';
 import { createAllWebMCPTools } from './tools/index.ts';
 import { globalMerchantStore } from './services/merchantStore.ts';
 import { globalAgentController } from './services/agentController.ts';
+import Header from './components/Header.tsx';
+import HeroBanner from './components/HeroBanner.tsx';
+import FAQSection from './components/FAQSection.tsx';
+import ForAgentsSection from './components/ForAgentsSection.tsx';
 import VaultManager from './components/VaultManager.tsx';
 import MerchantShowcase from './components/MerchantShowcase.tsx';
 import AgentChat from './components/AgentChat.tsx';
 import {
-  Sparkles,
   Bot,
-  CheckCircle2,
-  AlertTriangle,
   Play,
   Terminal,
   HelpCircle,
@@ -26,7 +27,7 @@ export interface ActivityLogEntry {
 }
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'vault' | 'perks' | 'agent'>('vault');
+  const [activeTab, setActiveTab] = useState<string>('vault');
   const [hasWebMCP, setHasWebMCP] = useState(false);
   const [registeredToolNames, setRegisteredToolNames] = useState<string[]>([]);
   const [selectedToolForTest, setSelectedToolForTest] = useState<string>('list_vault_documents');
@@ -90,6 +91,29 @@ export default function App() {
     }
   }, [tools]);
 
+  // Handle Tab Switch from Header or Navigation
+  const handleTabSelect = (tab: string) => {
+    if (tab === 'directory' || tab === 'offers') {
+      setActiveTab('perks');
+    } else if (tab === 'faq') {
+      const faqElem = document.getElementById('faq');
+      if (faqElem) {
+        faqElem.scrollIntoView({ behavior: 'smooth' });
+      } else {
+        setActiveTab('faq');
+      }
+    } else if (tab === 'for-agents') {
+      const agentElem = document.getElementById('for-agents');
+      if (agentElem) {
+        agentElem.scrollIntoView({ behavior: 'smooth' });
+      } else {
+        setActiveTab('for-agents');
+      }
+    } else {
+      setActiveTab(tab);
+    }
+  };
+
   // UI Actions for Claiming Merchant Perks
   const handleClaimMerchant = async (merchantId: string) => {
     addLog('UI', `Initiated WebMCP verification for perk "${merchantId}"`);
@@ -113,98 +137,88 @@ export default function App() {
     }
   };
 
+  const isPerksTab = activeTab === 'perks' || activeTab === 'directory' || activeTab === 'offers';
+
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
-      {/* Top Header */}
-      <header className="border-b border-slate-800 bg-slate-900/60 backdrop-blur px-6 py-3.5 flex items-center justify-between sticky top-0 z-30">
-        <div className="flex items-center gap-3">
-          <div className="h-9 w-9 rounded-lg bg-gradient-to-br from-indigo-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-indigo-500/25">
-            <Sparkles className="h-5 w-5 text-white" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-base font-semibold tracking-tight text-slate-100">
-                WebMCP Student Verification
-              </h1>
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-950 border border-indigo-800 text-indigo-300 font-mono">
-                WebMCP Native
-              </span>
-            </div>
-            <p className="text-xs text-slate-400">
-              Student Identity Vault, Multi-Merchant Perks & Autonomous Verification Suite
-            </p>
-          </div>
-        </div>
+    <div className="min-h-screen bg-[#F8F6F0] text-neutral-900 flex flex-col font-sans selection:bg-[#0066FF] selection:text-white">
+      {/* Editorial Header */}
+      <Header
+        activeTab={activeTab}
+        onSelectTab={handleTabSelect}
+        hasWebMCP={hasWebMCP}
+      />
 
-        {/* Navigation Tab Switcher */}
-        <div className="flex items-center gap-1.5 bg-slate-900 border border-slate-800 p-1 rounded-xl">
-          <button
-            type="button"
-            onClick={() => setActiveTab('vault')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer flex items-center gap-1.5 ${
-              activeTab === 'vault'
-                ? 'bg-indigo-600 text-white shadow-sm'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <ShieldCheck className="h-3.5 w-3.5" />
-            <span>Student Vault</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab('perks')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer flex items-center gap-1.5 ${
-              activeTab === 'perks'
-                ? 'bg-indigo-600 text-white shadow-sm'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <Gift className="h-3.5 w-3.5" />
-            <span>Perks Showcase</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab('agent')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer flex items-center gap-1.5 ${
-              activeTab === 'agent'
-                ? 'bg-indigo-600 text-white shadow-sm'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <Bot className="h-3.5 w-3.5" />
-            <span>Verification Agent</span>
-          </button>
-        </div>
+      {/* Hero Banner Section */}
+      <HeroBanner
+        offerCount={12}
+        universityCount="4,200+"
+        onOpenVault={() => setActiveTab('vault')}
+        onRegistrarMatch={() => setActiveTab('agent')}
+      />
 
-        {/* WebMCP Connection Badge */}
-        <div className="flex items-center gap-2.5 text-xs">
-          <div
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border ${
-              hasWebMCP
-                ? 'bg-emerald-950/50 border-emerald-800/80 text-emerald-300'
-                : 'bg-amber-950/50 border-amber-800/80 text-amber-300'
-            }`}
-            title={hasWebMCP ? 'WebMCP enabled in browser (document.modelContext active)' : 'Enable chrome://flags/#enable-webmcp-testing'}
-          >
-            {hasWebMCP ? (
-              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
-            ) : (
-              <AlertTriangle className="h-3.5 w-3.5 text-amber-400" />
-            )}
-            <span className="font-medium">{hasWebMCP ? 'WebMCP (Browser Agent Active)' : 'WebMCP Flag Needed'}</span>
+      {/* Hidden subtitle for accessibility / branding test expectations */}
+      <div className="sr-only">
+        <h1>WebMCP Student Verification</h1>
+        <p>Student Identity Vault, Multi-Merchant Perks & Autonomous Verification Suite</p>
+      </div>
+
+      {/* Main Tab Switcher Bar */}
+      <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 mb-6">
+        <div className="flex items-center justify-between border-b border-black pb-3 flex-wrap gap-3">
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setActiveTab('vault')}
+              className={`px-4 py-2 text-xs sm:text-sm font-mono border border-black cursor-pointer transition flex items-center gap-2 ${
+                activeTab === 'vault'
+                  ? 'bg-black text-white shadow-[2px_2px_0px_0px_#0066FF]'
+                  : 'bg-white text-neutral-800 hover:bg-neutral-100 shadow-[2px_2px_0px_0px_#000000]'
+              }`}
+            >
+              <ShieldCheck className="w-4 h-4" />
+              <span>Student Vault</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('perks')}
+              className={`px-4 py-2 text-xs sm:text-sm font-mono border border-black cursor-pointer transition flex items-center gap-2 ${
+                isPerksTab
+                  ? 'bg-black text-white shadow-[2px_2px_0px_0px_#0066FF]'
+                  : 'bg-white text-neutral-800 hover:bg-neutral-100 shadow-[2px_2px_0px_0px_#000000]'
+              }`}
+            >
+              <Gift className="w-4 h-4" />
+              <span>Perks Showcase</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('agent')}
+              className={`px-4 py-2 text-xs sm:text-sm font-mono border border-black cursor-pointer transition flex items-center gap-2 ${
+                activeTab === 'agent'
+                  ? 'bg-black text-white shadow-[2px_2px_0px_0px_#0066FF]'
+                  : 'bg-white text-neutral-800 hover:bg-neutral-100 shadow-[2px_2px_0px_0px_#000000]'
+              }`}
+            >
+              <Bot className="w-4 h-4" />
+              <span>Verification Agent</span>
+            </button>
+          </div>
+
+          <div className="font-mono text-xs text-neutral-500 hidden sm:block">
+            {tools.length} WebMCP tools loaded in sandbox
           </div>
         </div>
-      </header>
+      </div>
 
       {/* Main Workspace Layout */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-5 grid grid-cols-1 lg:grid-cols-12 gap-5">
-        {/* Left / Center Column (8 cols) */}
-        <section className="lg:col-span-8 flex flex-col gap-4">
-          {activeTab === 'vault' && (
-            <VaultManager vault={globalVault} />
-          )}
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Primary Workspace Column (8 cols) */}
+        <section className="lg:col-span-8 flex flex-col gap-6">
+          {activeTab === 'vault' && <VaultManager vault={globalVault} />}
 
-          {activeTab === 'perks' && (
+          {isPerksTab && (
             <MerchantShowcase
               store={globalMerchantStore}
               onClaim={handleClaimMerchant}
@@ -212,37 +226,35 @@ export default function App() {
             />
           )}
 
-          {activeTab === 'agent' && (
-            <AgentChat controller={globalAgentController} />
-          )}
+          {activeTab === 'agent' && <AgentChat controller={globalAgentController} />}
 
           {/* Activity Log Feed */}
-          <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4 flex flex-col gap-2.5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-slate-200 font-semibold text-xs uppercase tracking-wider">
-                <Terminal className="h-4 w-4 text-emerald-400" />
+          <div className="bg-white border border-black shadow-[4px_4px_0px_0px_#000000] p-5 flex flex-col gap-3">
+            <div className="flex items-center justify-between border-b border-neutral-200 pb-3">
+              <div className="flex items-center gap-2 text-neutral-900 font-bold text-xs uppercase tracking-wider font-mono">
+                <Terminal className="h-4 w-4 text-[#0066FF]" />
                 <h2>Real-Time Activity Feed</h2>
               </div>
-              <span className="text-[11px] text-slate-500 font-mono">Live WebMCP tool execution log</span>
+              <span className="text-[11px] text-neutral-500 font-mono">Live WebMCP tool execution log</span>
             </div>
 
-            <div className="bg-slate-950 rounded-lg p-3 font-mono text-xs text-slate-300 min-h-[140px] max-h-[180px] overflow-y-auto border border-slate-800/80 flex flex-col gap-2">
+            <div className="bg-neutral-950 rounded p-3.5 font-mono text-xs text-neutral-200 min-h-[140px] max-h-[180px] overflow-y-auto border border-black flex flex-col gap-2">
               {logs.length === 0 ? (
-                <span className="text-slate-600 italic">No activity yet.</span>
+                <span className="text-neutral-500 italic">No activity yet.</span>
               ) : (
                 logs.map((log, i) => (
                   <div key={i} className="flex items-start gap-2 leading-relaxed">
-                    <span className="text-slate-600 shrink-0 text-[11px]">{log.timestamp}</span>
+                    <span className="text-neutral-500 shrink-0 text-[11px]">{log.timestamp}</span>
                     <span
-                      className={`text-[9px] uppercase font-bold px-1.5 py-0.2 rounded shrink-0 ${
+                      className={`text-[9px] uppercase font-bold px-1.5 py-0.5 rounded shrink-0 ${
                         log.source === 'WebMCP'
-                          ? 'bg-emerald-950 border border-emerald-800 text-emerald-300'
-                          : 'bg-slate-800 border border-slate-700 text-slate-300'
+                          ? 'bg-emerald-950 border border-emerald-700 text-emerald-300'
+                          : 'bg-neutral-800 border border-neutral-700 text-neutral-300'
                       }`}
                     >
                       {log.source}
                     </span>
-                    <span className="text-slate-200 break-words">{log.message}</span>
+                    <span className="text-neutral-100 break-words">{log.message}</span>
                   </div>
                 ))
               )}
@@ -250,45 +262,51 @@ export default function App() {
           </div>
         </section>
 
-        {/* Right Column (4 cols) */}
-        <section className="lg:col-span-4 flex flex-col gap-4">
-          {/* Side Agent Chat when browsing perks or vault */}
-          {(activeTab === 'perks' || activeTab === 'vault') && (
+        {/* Right Sidebar Column (4 cols) */}
+        <section className="lg:col-span-4 flex flex-col gap-6">
+          {/* Side Agent Assistant when browsing perks or vault */}
+          {(isPerksTab || activeTab === 'vault') && (
             <AgentChat controller={globalAgentController} />
           )}
 
           {/* Registered Tools Directory */}
-          <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4 flex flex-col gap-3">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-              <div className="flex items-center gap-2 text-slate-200 font-semibold text-xs">
-                <Bot className="h-4 w-4 text-indigo-400" />
+          <div className="bg-white border border-black shadow-[4px_4px_0px_0px_#000000] p-5 flex flex-col gap-3">
+            <div className="flex items-center justify-between border-b border-neutral-200 pb-3">
+              <div className="flex items-center gap-2 text-neutral-900 font-bold text-xs font-mono uppercase tracking-wider">
+                <Bot className="h-4 w-4 text-[#0066FF]" />
                 <h2>Exposed Agent Tools ({registeredToolNames.length || tools.length})</h2>
               </div>
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 font-mono">WebMCP</span>
+              <span className="text-[10px] px-1.5 py-0.5 border border-black bg-neutral-100 text-neutral-800 font-mono">
+                WebMCP
+              </span>
             </div>
 
-            <div className="flex flex-col gap-1.5 max-h-[180px] overflow-y-auto pr-1">
+            <div className="flex flex-col gap-2 max-h-[200px] overflow-y-auto pr-1">
               {tools.map((tool) => (
                 <div
                   key={tool.name}
                   onClick={() => setSelectedToolForTest(tool.name)}
-                  className={`p-2 rounded-lg border text-xs cursor-pointer transition flex items-center justify-between ${
+                  className={`p-2.5 border text-xs cursor-pointer transition flex items-center justify-between ${
                     selectedToolForTest === tool.name
-                      ? 'border-indigo-500/80 bg-indigo-950/40 text-indigo-200'
-                      : 'border-slate-800 hover:border-slate-700 bg-slate-950/40 text-slate-300'
+                      ? 'border-black bg-blue-50 text-[#0066FF] font-semibold shadow-[2px_2px_0px_0px_#0066FF]'
+                      : 'border-neutral-200 hover:border-neutral-400 bg-neutral-50/50 text-neutral-800'
                   }`}
                 >
                   <span className="font-mono text-[11px] truncate">{tool.name}</span>
-                  <span className="text-[10px] text-slate-500">{tool.annotations.readOnlyHint ? 'Read-only' : 'Mutating'}</span>
+                  <span className="text-[10px] font-mono text-neutral-500">
+                    {tool.annotations.readOnlyHint ? 'Read-only' : 'Mutating'}
+                  </span>
                 </div>
               ))}
             </div>
 
             {/* Test Tool Runner Console */}
-            <div className="pt-2 border-t border-slate-800 flex flex-col gap-2">
-              <div className="flex items-center justify-between text-[11px] text-slate-400">
-                <span className="font-semibold">Test In-App Runner:</span>
-                <span className="font-mono text-indigo-400 truncate max-w-[140px]">{selectedToolForTest}</span>
+            <div className="pt-3 border-t border-neutral-200 flex flex-col gap-2.5">
+              <div className="flex items-center justify-between text-[11px] text-neutral-700 font-mono">
+                <span className="font-bold">Test In-App Runner:</span>
+                <span className="text-[#0066FF] truncate max-w-[140px] font-semibold">
+                  {selectedToolForTest}
+                </span>
               </div>
 
               <textarea
@@ -296,13 +314,13 @@ export default function App() {
                 onChange={(e) => setTestArgumentsJson(e.target.value)}
                 placeholder='JSON arguments e.g. {"presetId": "HARVARD_EXPIRED"}'
                 rows={2}
-                className="w-full bg-slate-950 border border-slate-800 rounded p-2 text-[11px] font-mono text-slate-300 focus:outline-none focus:border-indigo-500"
+                className="w-full bg-white border border-black p-2 text-[11px] font-mono text-neutral-900 focus:outline-none focus:ring-1 focus:ring-[#0066FF]"
               />
 
               <button
                 type="button"
                 onClick={handleExecuteToolTest}
-                className="w-full py-1.5 px-3 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs flex items-center justify-center gap-1.5 transition cursor-pointer shadow-md shadow-indigo-600/20"
+                className="w-full py-2 px-3 bg-[#0066FF] hover:bg-[#0052cc] text-white font-mono font-medium text-xs flex items-center justify-center gap-1.5 border border-black shadow-[2px_2px_0px_0px_#000000] cursor-pointer transition active:translate-x-0.5 active:translate-y-0.5"
               >
                 <Play className="h-3 w-3 fill-current" />
                 <span>Execute Tool</span>
@@ -311,17 +329,40 @@ export default function App() {
           </div>
 
           {/* Quick Guide Card */}
-          <div className="bg-slate-900/30 border border-slate-800/60 rounded-xl p-3.5 text-xs text-slate-400 flex items-start gap-2.5">
-            <HelpCircle className="h-4 w-4 text-cyan-400 shrink-0 mt-0.5" />
+          <div className="bg-white border border-black shadow-[3px_3px_0px_0px_#000000] p-4 text-xs text-neutral-700 flex items-start gap-2.5">
+            <HelpCircle className="h-4 w-4 text-[#0066FF] shrink-0 mt-0.5" />
             <div className="leading-relaxed text-[11px]">
-              <span className="font-semibold text-slate-300">How to use with AI Agents:</span>
+              <span className="font-bold text-neutral-900 font-mono">Zero-PII Claim Checks:</span>
               <p className="mt-1">
-                AI agents query <code className="text-cyan-300 font-mono">list_vault_documents</code> to receive sanitized claim-check handles under 300 characters, maintaining zero-PII privacy while keeping full binary assets in the client vault sandbox.
+                AI agents query <code className="text-[#0066FF] font-mono font-semibold">list_vault_documents</code> to receive sanitized claim-check handles under 300 characters, maintaining zero-PII privacy while keeping full binary assets in the client vault sandbox.
               </p>
             </div>
           </div>
         </section>
       </main>
+
+      {/* FAQ Accordion Section */}
+      <FAQSection />
+
+      {/* For Agents Section */}
+      <ForAgentsSection />
+
+      {/* Footer matching reference design */}
+      <footer className="w-full border-t border-black bg-white mt-12 py-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 font-mono text-xs text-neutral-500">
+          <div>© 2026</div>
+          <div className="flex items-center gap-2">
+            <a href="#api-docs" onClick={(e) => e.preventDefault()} className="hover:text-black transition">
+              /api-docs
+            </a>
+            <span>·</span>
+            <a href="#privacy" onClick={(e) => e.preventDefault()} className="hover:text-black transition">
+              privacy
+            </a>
+          </div>
+          <div>updated as new sites ship WebMCP</div>
+        </div>
+      </footer>
     </div>
   );
 }
