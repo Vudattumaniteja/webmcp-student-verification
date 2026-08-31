@@ -5,7 +5,9 @@ import { globalVault } from './services/vault.ts';
 import { createVaultTools } from './services/vaultTools.ts';
 import { globalVerificationEngine } from './services/verificationEngine.ts';
 import { createVerificationTools } from './tools/verificationTools.ts';
+import { globalMerchantStore } from './services/merchantStore.ts';
 import VaultManager from './components/VaultManager.tsx';
+import MerchantShowcase from './components/MerchantShowcase.tsx';
 import ArchitectureCanvas from './components/ArchitectureCanvas.tsx';
 import NodeInspector from './components/NodeInspector.tsx';
 import QuickActions from './components/QuickActions.tsx';
@@ -21,10 +23,11 @@ import {
   HelpCircle,
   ShieldCheck,
   LayoutGrid,
+  Gift,
 } from 'lucide-react';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'vault' | 'canvas'>('vault');
+  const [activeTab, setActiveTab] = useState<'vault' | 'perks' | 'canvas'>('vault');
   const [state, setState] = useState<ArchitectureState>(globalStore.getState());
   const [hasWebMCP, setHasWebMCP] = useState(false);
   const [registeredToolNames, setRegisteredToolNames] = useState<string[]>([]);
@@ -112,7 +115,71 @@ export default function App() {
     }
   }, [allTools]);
 
-  // UI Actions
+  // UI Actions for Claiming Merchant Perks
+  const handleClaimMerchant = async (merchantId: string) => {
+    globalStore.addLog('UI', `Initiated WebMCP verification for perk "${merchantId}"`);
+    globalMerchantStore.updateMerchantStatus(merchantId, 'VERIFYING');
+
+    try {
+      const profile = globalVault.getState().profile;
+      const submission = globalVerificationEngine.submitPersonalInfo({
+        schoolId: profile.universityId,
+        firstName: profile.firstName,
+        lastName: profile.lastName,
+        email: profile.email,
+        merchantId,
+      });
+
+      if (submission.status === 'APPROVED' && submission.rewardCode) {
+        globalMerchantStore.updateMerchantStatus(merchantId, 'APPROVED', submission.rewardCode);
+        globalStore.addLog(
+          'WebMCP',
+          `[Perk Unlocked] Instant registrar match approved for ${merchantId}. Promo Code: ${submission.rewardCode}`,
+        );
+        return;
+      }
+
+      if (submission.status === 'PENDING_DOCS') {
+        const documents = globalVault.getState().documents;
+        if (documents.length === 0) {
+          const errMsg = 'No proof documents found in vault. Please add a document to proceed.';
+          globalMerchantStore.updateMerchantStatus(merchantId, 'ERROR', undefined, errMsg);
+          globalStore.addLog('WebMCP', `[Perk Claim Failed] ${errMsg}`);
+          return;
+        }
+
+        // Pick first document in vault
+        const doc = documents[0];
+        const docBlob = await globalVault.getDocumentBlob(doc.id);
+        if (!docBlob) {
+          const errMsg = `Document binary missing in sandbox for handle ${doc.id}.`;
+          globalMerchantStore.updateMerchantStatus(merchantId, 'ERROR', undefined, errMsg);
+          return;
+        }
+
+        const uploadResult = globalVerificationEngine.uploadDocumentDirect(submission.verificationId, docBlob, doc);
+        if (uploadResult.status === 'APPROVED' && uploadResult.rewardCode) {
+          globalMerchantStore.updateMerchantStatus(merchantId, 'APPROVED', uploadResult.rewardCode);
+          globalStore.addLog(
+            'WebMCP',
+            `[Perk Unlocked] Vault document verified for ${merchantId}. Promo Code: ${uploadResult.rewardCode}`,
+          );
+        } else {
+          const errorMsg = uploadResult.remedyText
+            ? `${uploadResult.rejectionReason} ${uploadResult.remedyText}`
+            : uploadResult.rejectionReason || 'Document rejected by verification authority.';
+          globalMerchantStore.updateMerchantStatus(merchantId, 'ERROR', undefined, errorMsg);
+          globalStore.addLog('WebMCP', `[Perk Rejected] Document rejected for ${merchantId}: ${errorMsg}`);
+        }
+      }
+    } catch (err: any) {
+      const errorMsg = err.message || 'Verification workflow error';
+      globalMerchantStore.updateMerchantStatus(merchantId, 'ERROR', undefined, errorMsg);
+      globalStore.addLog('WebMCP', `[Perk Claim Error] ${errorMsg}`);
+    }
+  };
+
+  // UI Actions for Architecture Studio
   const handleAddNode = (type: NodeType) => {
     const defaultNames: Record<NodeType, string> = {
       api_gateway: 'Edge API Gateway',
@@ -201,7 +268,7 @@ export default function App() {
               </span>
             </div>
             <p className="text-xs text-slate-400">
-              Student Identity Vault & Autonomous Verification Suite
+              Student Identity Vault, Multi-Merchant Perks & Autonomous Verification Suite
             </p>
           </div>
         </div>
@@ -219,6 +286,18 @@ export default function App() {
           >
             <ShieldCheck className="h-3.5 w-3.5" />
             <span>Student Vault</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('perks')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer flex items-center gap-1.5 ${
+              activeTab === 'perks'
+                ? 'bg-indigo-600 text-white shadow-sm'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <Gift className="h-3.5 w-3.5" />
+            <span>Perks Showcase</span>
           </button>
           <button
             type="button"
@@ -258,9 +337,19 @@ export default function App() {
       <main className="flex-1 max-w-7xl w-full mx-auto p-5 grid grid-cols-1 lg:grid-cols-12 gap-5">
         {/* Left / Center Column (8 cols) */}
         <section className="lg:col-span-8 flex flex-col gap-4">
-          {activeTab === 'vault' ? (
+          {activeTab === 'vault' && (
             <VaultManager vault={globalVault} />
-          ) : (
+          )}
+
+          {activeTab === 'perks' && (
+            <MerchantShowcase
+              store={globalMerchantStore}
+              onClaim={handleClaimMerchant}
+              onRetry={handleClaimMerchant}
+            />
+          )}
+
+          {activeTab === 'canvas' && (
             <>
               {/* Quick Action Bar */}
               <QuickActions

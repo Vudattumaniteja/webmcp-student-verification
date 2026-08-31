@@ -26,6 +26,19 @@ describe('WebMCP Student Identity & Architecture Studio App', () => {
     });
   });
 
+  it('switches to perks showcase tab and renders merchant perk cards', async () => {
+    render(<App />);
+    const perksTab = screen.getByRole('button', { name: /Perks Showcase/i });
+    fireEvent.click(perksTab);
+
+    await waitFor(() => {
+      expect(screen.getByText(/Multi-Merchant Student Perks Hub/i)).toBeInTheDocument();
+      expect(screen.getByText(/OpenAI ChatGPT Plus/i)).toBeInTheDocument();
+      expect(screen.getByText(/Spotify Premium Student/i)).toBeInTheDocument();
+      expect(screen.getByText(/AWS Educate/i)).toBeInTheDocument();
+    });
+  });
+
   it('switches to architecture canvas tab and renders quick actions', async () => {
     render(<App />);
     const canvasTab = screen.getByRole('button', { name: /Architecture Canvas/i });
