@@ -192,7 +192,7 @@ export class VerificationEngine {
       throw new Error(`Verification session not found for ID "${verificationId}"`);
     }
 
-    if (!docBlob || !(docBlob instanceof Blob) || docBlob.size === 0) {
+    if (!docBlob || typeof (docBlob as any).size !== 'number' || (docBlob as any).size === 0) {
       throw new Error('Valid document binary Blob is required');
     }
 

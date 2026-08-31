@@ -1,8 +1,19 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import App from './App.tsx';
+import { globalAgentController } from './services/agentController.ts';
+import { globalMerchantStore } from './services/merchantStore.ts';
+import { globalVault } from './services/vault.ts';
+import { globalVerificationEngine } from './services/verificationEngine.ts';
 
 describe('WebMCP Student Identity & Architecture Studio App', () => {
+  beforeEach(() => {
+    globalAgentController.reset();
+    globalMerchantStore.reset();
+    globalVault.switchPreset('STANFORD_VALID');
+    globalVerificationEngine.reset();
+  });
+
   it('renders application header and branding', async () => {
     render(<App />);
     await waitFor(() => {
@@ -50,17 +61,45 @@ describe('WebMCP Student Identity & Architecture Studio App', () => {
     });
   });
 
+  it('switches to verification agent tab and renders agent workspace', async () => {
+    render(<App />);
+    const agentTab = screen.getByRole('button', { name: /Verification Agent/i });
+    fireEvent.click(agentTab);
+
+    await waitFor(() => {
+      expect(screen.getAllByText(/Autonomous Verification Agent/i).length).toBeGreaterThan(0);
+    });
+  });
+
+  it('connects Claim with WebMCP button on merchant card to autonomous agent', async () => {
+    render(<App />);
+    const perksTab = screen.getByRole('button', { name: /Perks Showcase/i });
+    fireEvent.click(perksTab);
+
+    await waitFor(() => {
+      expect(screen.getByText(/Multi-Merchant Student Perks Hub/i)).toBeInTheDocument();
+    });
+
+    const claimButtons = screen.getAllByRole('button', { name: /Claim with WebMCP/i });
+    expect(claimButtons.length).toBeGreaterThan(0);
+    fireEvent.click(claimButtons[0]);
+
+    await waitFor(() => {
+      expect(screen.getAllByText(/Starting automated student verification/i).length).toBeGreaterThan(0);
+    });
+  });
+
   it('renders registered tools list including verification and vault tools', async () => {
     render(<App />);
     await waitFor(() => {
       expect(screen.getByText(/Exposed Agent Tools/i)).toBeInTheDocument();
-      expect(screen.getByText('search_school')).toBeInTheDocument();
-      expect(screen.getByText('submit_student_verification')).toBeInTheDocument();
-      expect(screen.getByText('upload_vault_document')).toBeInTheDocument();
-      expect(screen.getByText('check_verification_status')).toBeInTheDocument();
-      expect(screen.getByText('get_student_vault_profile')).toBeInTheDocument();
+      expect(screen.getAllByText('search_school').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('submit_student_verification').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('upload_vault_document').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('check_verification_status').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('get_student_vault_profile').length).toBeGreaterThan(0);
       expect(screen.getAllByText('list_vault_documents').length).toBeGreaterThan(0);
-      expect(screen.getByText('switch_demo_preset')).toBeInTheDocument();
+      expect(screen.getAllByText('switch_demo_preset').length).toBeGreaterThan(0);
     });
   });
 });
