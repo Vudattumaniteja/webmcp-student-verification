@@ -1,6 +1,4 @@
 import { useState, useEffect, useMemo } from 'react';
-import { globalStore, ArchitectureState, NodeType, SecurityIssue, ArchitectureNode } from './shared/state.ts';
-import { createArchitectureTools } from './shared/tools.ts';
 import { globalVault } from './services/vault.ts';
 import { globalVerificationEngine } from './services/verificationEngine.ts';
 import { createAllWebMCPTools } from './tools/index.ts';
@@ -9,11 +7,6 @@ import { globalAgentController } from './services/agentController.ts';
 import VaultManager from './components/VaultManager.tsx';
 import MerchantShowcase from './components/MerchantShowcase.tsx';
 import AgentChat from './components/AgentChat.tsx';
-import ArchitectureCanvas from './components/ArchitectureCanvas.tsx';
-import NodeInspector from './components/NodeInspector.tsx';
-import QuickActions from './components/QuickActions.tsx';
-import AuditModal from './components/AuditModal.tsx';
-import TerraformModal from './components/TerraformModal.tsx';
 import {
   Sparkles,
   Bot,
@@ -23,41 +16,39 @@ import {
   Terminal,
   HelpCircle,
   ShieldCheck,
-  LayoutGrid,
   Gift,
 } from 'lucide-react';
 
+export interface ActivityLogEntry {
+  timestamp: string;
+  source: 'WebMCP' | 'UI';
+  message: string;
+}
+
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'vault' | 'perks' | 'agent' | 'canvas'>('vault');
-  const [state, setState] = useState<ArchitectureState>(globalStore.getState());
+  const [activeTab, setActiveTab] = useState<'vault' | 'perks' | 'agent'>('vault');
   const [hasWebMCP, setHasWebMCP] = useState(false);
   const [registeredToolNames, setRegisteredToolNames] = useState<string[]>([]);
   const [selectedToolForTest, setSelectedToolForTest] = useState<string>('list_vault_documents');
   const [testArgumentsJson, setTestArgumentsJson] = useState<string>('{}');
+  const [logs, setLogs] = useState<ActivityLogEntry[]>([
+    {
+      timestamp: new Date().toLocaleTimeString(),
+      source: 'UI',
+      message: 'WebMCP Student Verification Suite initialized',
+    },
+  ]);
 
-  // Modals state
-  const [auditModalOpen, setAuditModalOpen] = useState(false);
-  const [auditScore, setAuditScore] = useState(100);
-  const [auditIssues, setAuditIssues] = useState<SecurityIssue[]>([]);
-  const [terraformModalOpen, setTerraformModalOpen] = useState(false);
-  const [terraformCode, setTerraformCode] = useState('');
+  const addLog = (source: 'WebMCP' | 'UI', message: string) => {
+    setLogs((prev) => [
+      ...prev.slice(-25),
+      { timestamp: new Date().toLocaleTimeString(), source, message },
+    ]);
+  };
 
-  const archTools = useMemo(() => createArchitectureTools(), []);
-  const webmcpTools = useMemo(() => createAllWebMCPTools(globalVerificationEngine, globalVault, globalStore), []);
+  const tools = useMemo(() => createAllWebMCPTools(globalVerificationEngine, globalVault), []);
 
-  const allTools = useMemo(() => {
-    return [...webmcpTools, ...archTools];
-  }, [webmcpTools, archTools]);
-
-  // 1. Subscribe to Store State Updates
-  useEffect(() => {
-    const unsubscribe = globalStore.subscribe((newState) => {
-      setState(newState);
-    });
-    return () => unsubscribe();
-  }, []);
-
-  // 2. Register WebMCP Tools in Browser DOM (document.modelContext)
+  // Register WebMCP Tools in Browser DOM (document.modelContext)
   useEffect(() => {
     const isSupported = typeof document !== 'undefined' && 'modelContext' in document && !!document.modelContext;
     setHasWebMCP(isSupported);
@@ -65,9 +56,8 @@ export default function App() {
     if (isSupported && document.modelContext) {
       const abortController = new AbortController();
 
-      // Register all WebMCP Tools
       Promise.all(
-        allTools.map((tool) =>
+        tools.map((tool) =>
           document.modelContext!.registerTool(
             {
               name: tool.name,
@@ -75,7 +65,10 @@ export default function App() {
               description: tool.description,
               inputSchema: tool.inputSchema,
               execute: async (input) => {
-                return await tool.execute(input, globalStore, 'WebMCP');
+                addLog('WebMCP', `Executing [${tool.name}] with: ${JSON.stringify(input)}`);
+                const result = await tool.execute(input);
+                addLog('WebMCP', `[${tool.name}] response: ${typeof result === 'string' ? result : JSON.stringify(result)}`);
+                return result;
               },
               annotations: tool.annotations,
             },
@@ -84,8 +77,8 @@ export default function App() {
         ),
       )
         .then(() => {
-          setRegisteredToolNames(allTools.map((t) => t.name));
-          globalStore.addLog('WebMCP', `Registered ${allTools.length} WebMCP tools in browser model context.`);
+          setRegisteredToolNames(tools.map((t) => t.name));
+          addLog('WebMCP', `Registered ${tools.length} WebMCP tools in browser model context.`);
         })
         .catch((err) => {
           console.error('[WebMCP Registration Error]', err);
@@ -95,86 +88,30 @@ export default function App() {
         abortController.abort();
       };
     }
-  }, [allTools]);
+  }, [tools]);
 
   // UI Actions for Claiming Merchant Perks
   const handleClaimMerchant = async (merchantId: string) => {
-    globalStore.addLog('UI', `Initiated WebMCP verification for perk "${merchantId}"`);
+    addLog('UI', `Initiated WebMCP verification for perk "${merchantId}"`);
     setActiveTab('agent');
     await globalAgentController.startVerification(merchantId);
   };
 
-  // UI Actions for Architecture Studio
-  const handleAddNode = (type: NodeType) => {
-    const defaultNames: Record<NodeType, string> = {
-      api_gateway: 'Edge API Gateway',
-      serverless_function: 'Worker Function',
-      database: 'PostgreSQL Instance',
-      cache: 'Redis Cache Cluster',
-      load_balancer: 'Application Load Balancer',
-      storage_bucket: 'Asset Storage Bucket',
-      auth_service: 'Auth & Identity Service',
-      queue: 'Async Message Queue',
-    };
-
-    globalStore.addNode({
-      type,
-      name: defaultNames[type] || 'New Node',
-    });
-    globalStore.addLog('UI', `Manually added ${type} component`);
-  };
-
-  const handleUpdateNode = (id: string, updates: Partial<ArchitectureNode>) => {
-    globalStore.updateNode(id, updates);
-  };
-
-  const handleDeleteNode = (id: string) => {
-    globalStore.removeNode(id);
-  };
-
-  const handleRunAudit = () => {
-    const result = globalStore.runSecurityAudit();
-    setAuditScore(result.score);
-    setAuditIssues(result.issues);
-    setAuditModalOpen(true);
-    globalStore.addLog('UI', `Executed Security Audit. Score: ${result.score}/100`);
-  };
-
-  const handleEstimateCost = () => {
-    const { totalMonthlyCost, breakdown } = globalStore.estimateCost();
-    alert(`Estimated Total Monthly Cost: $${totalMonthlyCost}/mo\n\n${breakdown.map((b) => `• ${b.name}: $${b.cost}/mo`).join('\n')}`);
-    globalStore.addLog('UI', `Calculated budget: $${totalMonthlyCost}/mo`);
-  };
-
-  const handleExportTerraform = () => {
-    const code = globalStore.exportTerraform();
-    setTerraformCode(code);
-    setTerraformModalOpen(true);
-    globalStore.addLog('UI', 'Exported architecture to Terraform HCL');
-  };
-
-  const handleLoadTemplate = (templateName: string) => {
-    globalStore.reset(templateName);
-    globalStore.addLog('UI', `Reset workspace to template "${templateName}"`);
-  };
-
   // Test Runner Handler
   const handleExecuteToolTest = async () => {
-    const target = allTools.find((t) => t.name === selectedToolForTest);
+    const target = tools.find((t) => t.name === selectedToolForTest);
     if (!target) return;
 
     try {
       const parsedArgs = JSON.parse(testArgumentsJson || '{}');
-      const result = await target.execute(parsedArgs, globalStore, 'UI');
-      globalStore.addLog('UI', `Ran tool test "${target.name}": ${typeof result === 'string' ? result : JSON.stringify(result)}`);
+      addLog('UI', `Executing tool test "${target.name}"`);
+      const result = await target.execute(parsedArgs);
+      addLog('UI', `Tool test "${target.name}" result: ${typeof result === 'string' ? result : JSON.stringify(result)}`);
     } catch (e: unknown) {
       const errMsg = e instanceof Error ? e.message : String(e);
       alert(`Execution Error: ${errMsg}`);
     }
   };
-
-  const selectedNode = state.nodes.find((n) => n.id === state.selectedNodeId) || null;
-  const totalCost = state.nodes.reduce((acc, n) => acc + n.monthlyCost, 0);
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
@@ -187,7 +124,7 @@ export default function App() {
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-base font-semibold tracking-tight text-slate-100">
-                WebMCP Architecture Studio
+                WebMCP Student Verification
               </h1>
               <span className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-950 border border-indigo-800 text-indigo-300 font-mono">
                 WebMCP Native
@@ -237,18 +174,6 @@ export default function App() {
             <Bot className="h-3.5 w-3.5" />
             <span>Verification Agent</span>
           </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab('canvas')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer flex items-center gap-1.5 ${
-              activeTab === 'canvas'
-                ? 'bg-indigo-600 text-white shadow-sm'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <LayoutGrid className="h-3.5 w-3.5" />
-            <span>Architecture Canvas</span>
-          </button>
         </div>
 
         {/* WebMCP Connection Badge */}
@@ -291,29 +216,6 @@ export default function App() {
             <AgentChat controller={globalAgentController} />
           )}
 
-          {activeTab === 'canvas' && (
-            <>
-              {/* Quick Action Bar */}
-              <QuickActions
-                onAddNode={handleAddNode}
-                onRunAudit={handleRunAudit}
-                onEstimateCost={handleEstimateCost}
-                onExportTerraform={handleExportTerraform}
-                onLoadTemplate={handleLoadTemplate}
-                totalCost={totalCost}
-              />
-
-              {/* Visual Topology Canvas */}
-              <ArchitectureCanvas
-                nodes={state.nodes}
-                connections={state.connections}
-                selectedNodeId={state.selectedNodeId}
-                onSelectNode={(id) => globalStore.selectNode(id)}
-                onDeleteNode={handleDeleteNode}
-              />
-            </>
-          )}
-
           {/* Activity Log Feed */}
           <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4 flex flex-col gap-2.5">
             <div className="flex items-center justify-between">
@@ -325,10 +227,10 @@ export default function App() {
             </div>
 
             <div className="bg-slate-950 rounded-lg p-3 font-mono text-xs text-slate-300 min-h-[140px] max-h-[180px] overflow-y-auto border border-slate-800/80 flex flex-col gap-2">
-              {state.logs.length === 0 ? (
+              {logs.length === 0 ? (
                 <span className="text-slate-600 italic">No activity yet.</span>
               ) : (
-                state.logs.map((log, i) => (
+                logs.map((log, i) => (
                   <div key={i} className="flex items-start gap-2 leading-relaxed">
                     <span className="text-slate-600 shrink-0 text-[11px]">{log.timestamp}</span>
                     <span
@@ -355,28 +257,18 @@ export default function App() {
             <AgentChat controller={globalAgentController} />
           )}
 
-          {/* Node Inspector or Canvas Helper when on canvas */}
-          {activeTab === 'canvas' && selectedNode && (
-            <NodeInspector
-              node={selectedNode}
-              onClose={() => globalStore.selectNode(null)}
-              onUpdate={handleUpdateNode}
-              onDelete={handleDeleteNode}
-            />
-          )}
-
           {/* Registered Tools Directory */}
           <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4 flex flex-col gap-3">
             <div className="flex items-center justify-between border-b border-slate-800 pb-2">
               <div className="flex items-center gap-2 text-slate-200 font-semibold text-xs">
                 <Bot className="h-4 w-4 text-indigo-400" />
-                <h2>Exposed Agent Tools ({registeredToolNames.length || allTools.length})</h2>
+                <h2>Exposed Agent Tools ({registeredToolNames.length || tools.length})</h2>
               </div>
               <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 font-mono">WebMCP</span>
             </div>
 
             <div className="flex flex-col gap-1.5 max-h-[180px] overflow-y-auto pr-1">
-              {allTools.map((tool) => (
+              {tools.map((tool) => (
                 <div
                   key={tool.name}
                   onClick={() => setSelectedToolForTest(tool.name)}
@@ -430,20 +322,6 @@ export default function App() {
           </div>
         </section>
       </main>
-
-      {/* Modals */}
-      <AuditModal
-        isOpen={auditModalOpen}
-        score={auditScore}
-        issues={auditIssues}
-        onClose={() => setAuditModalOpen(false)}
-      />
-
-      <TerraformModal
-        isOpen={terraformModalOpen}
-        code={terraformCode}
-        onClose={() => setTerraformModalOpen(false)}
-      />
     </div>
   );
 }
