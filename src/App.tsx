@@ -1,6 +1,9 @@
 import { useState, useEffect, useMemo } from 'react';
 import { globalStore, ArchitectureState, NodeType, SecurityIssue } from './shared/state.ts';
 import { createArchitectureTools } from './shared/tools.ts';
+import { globalVault } from './services/vault.ts';
+import { createVaultTools } from './services/vaultTools.ts';
+import VaultManager from './components/VaultManager.tsx';
 import ArchitectureCanvas from './components/ArchitectureCanvas.tsx';
 import NodeInspector from './components/NodeInspector.tsx';
 import QuickActions from './components/QuickActions.tsx';
@@ -13,15 +16,17 @@ import {
   AlertTriangle,
   Play,
   Terminal,
-  Layers,
   HelpCircle,
+  ShieldCheck,
+  LayoutGrid,
 } from 'lucide-react';
 
 export default function App() {
+  const [activeTab, setActiveTab] = useState<'vault' | 'canvas'>('vault');
   const [state, setState] = useState<ArchitectureState>(globalStore.getState());
   const [hasWebMCP, setHasWebMCP] = useState(false);
   const [registeredToolNames, setRegisteredToolNames] = useState<string[]>([]);
-  const [selectedToolForTest, setSelectedToolForTest] = useState<string>('run_architecture_security_audit');
+  const [selectedToolForTest, setSelectedToolForTest] = useState<string>('list_vault_documents');
   const [testArgumentsJson, setTestArgumentsJson] = useState<string>('{}');
 
   // Modals state
@@ -31,7 +36,22 @@ export default function App() {
   const [terraformModalOpen, setTerraformModalOpen] = useState(false);
   const [terraformCode, setTerraformCode] = useState('');
 
-  const tools = useMemo(() => createArchitectureTools(), []);
+  const archTools = useMemo(() => createArchitectureTools(), []);
+  const vaultTools = useMemo(() => createVaultTools(globalVault), []);
+
+  const allTools = useMemo(() => {
+    return [
+      ...vaultTools.map((vt) => ({
+        ...vt,
+        execute: async (input: any, _store?: any, callerSource: 'WebMCP' | 'UI' = 'WebMCP') => {
+          const res = await vt.execute(input);
+          globalStore.addLog(callerSource, `[${vt.name}] ${res}`);
+          return res;
+        },
+      })),
+      ...archTools,
+    ];
+  }, [archTools, vaultTools]);
 
   // 1. Subscribe to Store State Updates
   useEffect(() => {
@@ -49,9 +69,9 @@ export default function App() {
     if (isSupported && document.modelContext) {
       const abortController = new AbortController();
 
-      // Register all 8 Architecture Tools
+      // Register all WebMCP Tools
       Promise.all(
-        tools.map((tool) =>
+        allTools.map((tool) =>
           document.modelContext!.registerTool(
             {
               name: tool.name,
@@ -68,8 +88,8 @@ export default function App() {
         ),
       )
         .then(() => {
-          setRegisteredToolNames(tools.map((t) => t.name));
-          globalStore.addLog('WebMCP', `Registered ${tools.length} architecture tools in browser model context.`);
+          setRegisteredToolNames(allTools.map((t) => t.name));
+          globalStore.addLog('WebMCP', `Registered ${allTools.length} WebMCP tools in browser model context.`);
         })
         .catch((err) => {
           console.error('[WebMCP Registration Error]', err);
@@ -79,7 +99,7 @@ export default function App() {
         abortController.abort();
       };
     }
-  }, [tools]);
+  }, [allTools]);
 
   // UI Actions
   const handleAddNode = (type: NodeType) => {
@@ -137,7 +157,7 @@ export default function App() {
 
   // Test Runner Handler
   const handleExecuteToolTest = async () => {
-    const target = tools.find((t) => t.name === selectedToolForTest);
+    const target = allTools.find((t) => t.name === selectedToolForTest);
     if (!target) return;
 
     try {
@@ -162,13 +182,45 @@ export default function App() {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-base font-semibold tracking-tight text-slate-100">WebMCP Architecture Studio</h1>
+              <h1 className="text-base font-semibold tracking-tight text-slate-100">
+                WebMCP Architecture Studio
+              </h1>
               <span className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-950 border border-indigo-800 text-indigo-300 font-mono">
                 WebMCP Native
               </span>
             </div>
-            <p className="text-xs text-slate-400">Collaborative Human & AI Agent Cloud Topology Designer</p>
+            <p className="text-xs text-slate-400">
+              Student Identity Vault & Autonomous Verification Suite
+            </p>
           </div>
+        </div>
+
+        {/* Navigation Tab Switcher */}
+        <div className="flex items-center gap-1.5 bg-slate-900 border border-slate-800 p-1 rounded-xl">
+          <button
+            type="button"
+            onClick={() => setActiveTab('vault')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer flex items-center gap-1.5 ${
+              activeTab === 'vault'
+                ? 'bg-indigo-600 text-white shadow-sm'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <ShieldCheck className="h-3.5 w-3.5" />
+            <span>Student Vault</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('canvas')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer flex items-center gap-1.5 ${
+              activeTab === 'canvas'
+                ? 'bg-indigo-600 text-white shadow-sm'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <LayoutGrid className="h-3.5 w-3.5" />
+            <span>Architecture Canvas</span>
+          </button>
         </div>
 
         {/* WebMCP Connection Badge */}
@@ -193,26 +245,32 @@ export default function App() {
 
       {/* Main Workspace Layout */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-5 grid grid-cols-1 lg:grid-cols-12 gap-5">
-        {/* Left Column: Canvas & Actions (8 cols) */}
+        {/* Left / Center Column (8 cols) */}
         <section className="lg:col-span-8 flex flex-col gap-4">
-          {/* Quick Action Bar */}
-          <QuickActions
-            onAddNode={handleAddNode}
-            onRunAudit={handleRunAudit}
-            onEstimateCost={handleEstimateCost}
-            onExportTerraform={handleExportTerraform}
-            onLoadTemplate={handleLoadTemplate}
-            totalCost={totalCost}
-          />
+          {activeTab === 'vault' ? (
+            <VaultManager vault={globalVault} />
+          ) : (
+            <>
+              {/* Quick Action Bar */}
+              <QuickActions
+                onAddNode={handleAddNode}
+                onRunAudit={handleRunAudit}
+                onEstimateCost={handleEstimateCost}
+                onExportTerraform={handleExportTerraform}
+                onLoadTemplate={handleLoadTemplate}
+                totalCost={totalCost}
+              />
 
-          {/* Visual Topology Canvas */}
-          <ArchitectureCanvas
-            nodes={state.nodes}
-            connections={state.connections}
-            selectedNodeId={state.selectedNodeId}
-            onSelectNode={(id) => globalStore.selectNode(id)}
-            onDeleteNode={handleDeleteNode}
-          />
+              {/* Visual Topology Canvas */}
+              <ArchitectureCanvas
+                nodes={state.nodes}
+                connections={state.connections}
+                selectedNodeId={state.selectedNodeId}
+                onSelectNode={(id) => globalStore.selectNode(id)}
+                onDeleteNode={handleDeleteNode}
+              />
+            </>
+          )}
 
           {/* Activity Log Feed */}
           <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4 flex flex-col gap-2.5">
@@ -250,19 +308,14 @@ export default function App() {
 
         {/* Right Column: Node Inspector & Tool Test Runner (4 cols) */}
         <section className="lg:col-span-4 flex flex-col gap-4">
-          {/* Node Inspector */}
-          {selectedNode ? (
+          {/* Node Inspector or Canvas Helper when on canvas */}
+          {activeTab === 'canvas' && selectedNode && (
             <NodeInspector
               node={selectedNode}
               onClose={() => globalStore.selectNode(null)}
               onUpdate={handleUpdateNode}
               onDelete={handleDeleteNode}
             />
-          ) : (
-            <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4 text-center text-slate-500">
-              <Layers className="h-6 w-6 mx-auto mb-1.5 opacity-40" />
-              <p className="text-xs font-medium">Click any node on the canvas to inspect & configure properties.</p>
-            </div>
           )}
 
           {/* Registered Tools Directory */}
@@ -270,13 +323,13 @@ export default function App() {
             <div className="flex items-center justify-between border-b border-slate-800 pb-2">
               <div className="flex items-center gap-2 text-slate-200 font-semibold text-xs">
                 <Bot className="h-4 w-4 text-indigo-400" />
-                <h2>Exposed Agent Tools ({registeredToolNames.length || tools.length})</h2>
+                <h2>Exposed Agent Tools ({registeredToolNames.length || allTools.length})</h2>
               </div>
               <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 font-mono">WebMCP</span>
             </div>
 
-            <div className="flex flex-col gap-1.5 max-h-[160px] overflow-y-auto pr-1">
-              {tools.map((tool) => (
+            <div className="flex flex-col gap-1.5 max-h-[180px] overflow-y-auto pr-1">
+              {allTools.map((tool) => (
                 <div
                   key={tool.name}
                   onClick={() => setSelectedToolForTest(tool.name)}
@@ -302,12 +355,13 @@ export default function App() {
               <textarea
                 value={testArgumentsJson}
                 onChange={(e) => setTestArgumentsJson(e.target.value)}
-                placeholder='JSON arguments e.g. {"name": "Auth API"}'
+                placeholder='JSON arguments e.g. {"presetId": "HARVARD_EXPIRED"}'
                 rows={2}
                 className="w-full bg-slate-950 border border-slate-800 rounded p-2 text-[11px] font-mono text-slate-300 focus:outline-none focus:border-indigo-500"
               />
 
               <button
+                type="button"
                 onClick={handleExecuteToolTest}
                 className="w-full py-1.5 px-3 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs flex items-center justify-center gap-1.5 transition cursor-pointer shadow-md shadow-indigo-600/20"
               >
@@ -323,7 +377,7 @@ export default function App() {
             <div className="leading-relaxed text-[11px]">
               <span className="font-semibold text-slate-300">How to use with AI Agents:</span>
               <p className="mt-1">
-                Open the <strong>Model Context Inspector</strong> extension or ChatGPT in-app browser and prompt in plain English (e.g. <em>"Add an auth service and connect it to the gateway"</em>).
+                AI agents query <code className="text-cyan-300 font-mono">list_vault_documents</code> to receive sanitized claim-check handles under 300 characters, maintaining zero-PII privacy while keeping full binary assets in the client vault sandbox.
               </p>
             </div>
           </div>
