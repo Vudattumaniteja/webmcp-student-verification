@@ -1,188 +1,416 @@
-import { useState, useEffect } from 'react';
-import { Bot, CheckCircle2, AlertTriangle, Play, Sparkles, Terminal } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { globalStore, ArchitectureState, NodeType, SecurityIssue } from './shared/state.ts';
+import { createArchitectureTools } from './shared/tools.ts';
+import ArchitectureCanvas from './components/ArchitectureCanvas.tsx';
+import NodeInspector from './components/NodeInspector.tsx';
+import QuickActions from './components/QuickActions.tsx';
+import AuditModal from './components/AuditModal.tsx';
+import TerraformModal from './components/TerraformModal.tsx';
+import {
+  Sparkles,
+  Bot,
+  CheckCircle2,
+  AlertTriangle,
+  Play,
+  Terminal,
+  Radio,
+  Layers,
+  HelpCircle,
+} from 'lucide-react';
 
 export default function App() {
+  const [state, setState] = useState<ArchitectureState>(globalStore.getState());
   const [hasWebMCP, setHasWebMCP] = useState(false);
-  const [registeredTools, setRegisteredTools] = useState<string[]>([]);
-  const [logs, setLogs] = useState<string[]>([]);
+  const [isBridgeConnected, setIsBridgeConnected] = useState(false);
+  const [registeredToolNames, setRegisteredToolNames] = useState<string[]>([]);
+  const [selectedToolForTest, setSelectedToolForTest] = useState<string>('run_architecture_security_audit');
+  const [testArgumentsJson, setTestArgumentsJson] = useState<string>('{}');
 
-  const addLog = (msg: string) => {
-    setLogs((prev) => [...prev.slice(-15), `[${new Date().toLocaleTimeString()}] ${msg}`]);
-  };
+  // Modals state
+  const [auditModalOpen, setAuditModalOpen] = useState(false);
+  const [auditScore, setAuditScore] = useState(100);
+  const [auditIssues, setAuditIssues] = useState<SecurityIssue[]>([]);
+  const [terraformModalOpen, setTerraformModalOpen] = useState(false);
+  const [terraformCode, setTerraformCode] = useState('');
 
+  const tools = useMemo(() => createArchitectureTools(), []);
+
+  // 1. Subscribe to Store State Updates
+  useEffect(() => {
+    const unsubscribe = globalStore.subscribe((newState) => {
+      setState(newState);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // 2. Register WebMCP Tools in Browser DOM (document.modelContext)
   useEffect(() => {
     const isSupported = typeof document !== 'undefined' && 'modelContext' in document && !!document.modelContext;
     setHasWebMCP(isSupported);
 
     if (isSupported && document.modelContext) {
-      // Register an initial test tool
-      const toolDef: WebMCP.ModelContextTool = {
-        name: 'ping_status',
-        title: 'Ping Status',
-        description: 'Verifies connectivity and retrieves application health and stats.',
-        inputSchema: {
-          type: 'object',
-          properties: {
-            echo: { type: 'string', description: 'Optional message to echo back' },
-          },
-        },
-        execute: async (input: { echo?: string }) => {
-          const echoVal = input?.echo || 'default';
-          addLog(`ping_status executed with argument: "${echoVal}"`);
-          return `WebMCP Studio online. Echo: ${echoVal}`;
-        },
-        annotations: {
-          readOnlyHint: true,
-          untrustedContentHint: false,
-        },
-      };
+      const abortController = new AbortController();
 
-      document.modelContext
-        .registerTool(toolDef)
+      // Register all 8 Architecture Tools
+      Promise.all(
+        tools.map((tool) =>
+          document.modelContext!.registerTool(
+            {
+              name: tool.name,
+              title: tool.title,
+              description: tool.description,
+              inputSchema: tool.inputSchema,
+              execute: async (input) => {
+                return await tool.execute(input, globalStore, 'WebMCP');
+              },
+              annotations: tool.annotations,
+            },
+            { signal: abortController.signal },
+          ),
+        ),
+      )
         .then(() => {
-          setRegisteredTools((prev) => Array.from(new Set([...prev, toolDef.name])));
-          addLog('Registered WebMCP tool: ping_status');
+          setRegisteredToolNames(tools.map((t) => t.name));
+          globalStore.addLog('WebMCP', `Registered ${tools.length} architecture tools in browser model context.`);
         })
         .catch((err) => {
-          console.error('Registration failed:', err);
+          console.error('[WebMCP Registration Error]', err);
         });
+
+      return () => {
+        abortController.abort();
+      };
     }
+  }, [tools]);
+
+  // 3. Connect to Local WebSocket Bridge (for Claude Code / Antigravity / Codex CLI sync)
+  useEffect(() => {
+    let ws: WebSocket | null = null;
+    let reconnectTimeout: any = null;
+
+    function connectWs() {
+      try {
+        ws = new WebSocket('ws://localhost:8765');
+
+        ws.onopen = () => {
+          setIsBridgeConnected(true);
+          globalStore.addLog('MCP-Bridge', 'Connected to External Agent Bridge (Claude Code / Antigravity / Codex)');
+        };
+
+        ws.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            if (data.type === 'STATE_UPDATE' && data.state) {
+              setState(data.state);
+            }
+          } catch (e) {
+            console.error('[WS Parse Error]', e);
+          }
+        };
+
+        ws.onclose = () => {
+          setIsBridgeConnected(false);
+          reconnectTimeout = setTimeout(connectWs, 3000);
+        };
+
+        ws.onerror = () => {
+          setIsBridgeConnected(false);
+        };
+      } catch {
+        setIsBridgeConnected(false);
+        reconnectTimeout = setTimeout(connectWs, 3000);
+      }
+    }
+
+    connectWs();
+
+    return () => {
+      if (ws) ws.close();
+      if (reconnectTimeout) clearTimeout(reconnectTimeout);
+    };
   }, []);
 
-  const handleManualTest = async () => {
-    if (!hasWebMCP || !document.modelContext) {
-      addLog('WebMCP not detected. Enable chrome://flags/#enable-webmcp-testing in Chrome 149+');
-      return;
-    }
+  // UI Actions
+  const handleAddNode = (type: NodeType) => {
+    const defaultNames: Record<NodeType, string> = {
+      api_gateway: 'Edge API Gateway',
+      serverless_function: 'Worker Function',
+      database: 'PostgreSQL Instance',
+      cache: 'Redis Cache Cluster',
+      load_balancer: 'Application Load Balancer',
+      storage_bucket: 'Asset Storage Bucket',
+      auth_service: 'Auth & Identity Service',
+      queue: 'Async Message Queue',
+    };
+
+    globalStore.addNode({
+      type,
+      name: defaultNames[type] || 'New Node',
+    });
+    globalStore.addLog('UI', `Manually added ${type} component`);
+  };
+
+  const handleUpdateNode = (id: string, updates: any) => {
+    globalStore.updateNode(id, updates);
+  };
+
+  const handleDeleteNode = (id: string) => {
+    globalStore.removeNode(id);
+  };
+
+  const handleRunAudit = () => {
+    const result = globalStore.runSecurityAudit();
+    setAuditScore(result.score);
+    setAuditIssues(result.issues);
+    setAuditModalOpen(true);
+    globalStore.addLog('UI', `Executed Security Audit. Score: ${result.score}/100`);
+  };
+
+  const handleEstimateCost = () => {
+    const { totalMonthlyCost, breakdown } = globalStore.estimateCost();
+    alert(`Estimated Total Monthly Cost: $${totalMonthlyCost}/mo\n\n${breakdown.map((b) => `• ${b.name}: $${b.cost}/mo`).join('\n')}`);
+    globalStore.addLog('UI', `Calculated budget: $${totalMonthlyCost}/mo`);
+  };
+
+  const handleExportTerraform = () => {
+    const code = globalStore.exportTerraform();
+    setTerraformCode(code);
+    setTerraformModalOpen(true);
+    globalStore.addLog('UI', 'Exported architecture to Terraform HCL');
+  };
+
+  const handleLoadTemplate = (templateName: string) => {
+    globalStore.reset(templateName);
+    globalStore.addLog('UI', `Reset workspace to template "${templateName}"`);
+  };
+
+  // Test Runner Handler
+  const handleExecuteToolTest = async () => {
+    const target = tools.find((t) => t.name === selectedToolForTest);
+    if (!target) return;
 
     try {
-      const tools = await document.modelContext.getTools();
-      const target = tools.find((t) => t.name === 'ping_status');
-      if (target) {
-        addLog('Invoking ping_status...');
-        const mc = document.modelContext as any;
-        if (typeof mc.executeTool === 'function') {
-          const result = await mc.executeTool(target, JSON.stringify({ echo: 'Hello from in-app runner' }));
-          addLog(`Result: ${result}`);
-        } else {
-          addLog(`Tool "${target.name}" is active and registered with the browser model context.`);
-        }
-      }
+      const parsedArgs = JSON.parse(testArgumentsJson || '{}');
+      const result = await target.execute(parsedArgs, globalStore, 'UI');
+      globalStore.addLog('UI', `Ran tool test "${target.name}": ${typeof result === 'string' ? result : JSON.stringify(result)}`);
     } catch (e: any) {
-      addLog(`Error: ${e.message}`);
+      alert(`Execution Error: ${e.message}`);
     }
   };
 
+  const selectedNode = state.nodes.find((n) => n.id === state.selectedNodeId) || null;
+  const totalCost = state.nodes.reduce((acc, n) => acc + n.monthlyCost, 0);
+
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
-      {/* Header */}
-      <header className="border-b border-slate-800 bg-slate-900/60 backdrop-blur px-6 py-4 flex items-center justify-between">
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
+      {/* Top Header */}
+      <header className="border-b border-slate-800 bg-slate-900/60 backdrop-blur px-6 py-3.5 flex items-center justify-between sticky top-0 z-30">
         <div className="flex items-center gap-3">
-          <div className="h-9 w-9 rounded-lg bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-500/30">
+          <div className="h-9 w-9 rounded-lg bg-gradient-to-br from-indigo-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-indigo-500/25">
             <Sparkles className="h-5 w-5 text-white" />
           </div>
           <div>
-            <h1 className="text-lg font-semibold tracking-tight">WebMCP Studio</h1>
-            <p className="text-xs text-slate-400">Agent-Native Web Application</p>
+            <div className="flex items-center gap-2">
+              <h1 className="text-base font-semibold tracking-tight text-slate-100">WebMCP Architecture Studio</h1>
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-950 border border-indigo-800 text-indigo-300 font-mono">
+                Dual-Surface Agent Native
+              </span>
+            </div>
+            <p className="text-xs text-slate-400">Collaborative Human & Agent Cloud Topology Designer</p>
           </div>
         </div>
 
-        <div className="flex items-center gap-4 text-xs">
+        {/* Dual Connection Badges */}
+        <div className="flex items-center gap-2.5 text-xs">
+          {/* WebMCP Badge */}
           <div
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-full border ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border ${
               hasWebMCP
-                ? 'bg-emerald-950/50 border-emerald-800 text-emerald-300'
-                : 'bg-amber-950/50 border-amber-800 text-amber-300'
+                ? 'bg-emerald-950/50 border-emerald-800/80 text-emerald-300'
+                : 'bg-amber-950/50 border-amber-800/80 text-amber-300'
             }`}
+            title={hasWebMCP ? 'WebMCP enabled in browser (document.modelContext active)' : 'Enable chrome://flags/#enable-webmcp-testing'}
           >
             {hasWebMCP ? (
-              <>
-                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
-                <span>WebMCP Active</span>
-              </>
+              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
             ) : (
-              <>
-                <AlertTriangle className="h-3.5 w-3.5 text-amber-400" />
-                <span>WebMCP Flag Needed</span>
-              </>
+              <AlertTriangle className="h-3.5 w-3.5 text-amber-400" />
             )}
+            <span className="font-medium">{hasWebMCP ? 'WebMCP (Browser Agent Active)' : 'WebMCP Flag Needed'}</span>
+          </div>
+
+          {/* MCP CLI Bridge Badge */}
+          <div
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border ${
+              isBridgeConnected
+                ? 'bg-indigo-950/50 border-indigo-800/80 text-indigo-300'
+                : 'bg-slate-900 border-slate-800 text-slate-400'
+            }`}
+            title="External CLI Agent WebSocket bridge (Claude Code, Antigravity, Codex)"
+          >
+            <Radio className={`h-3.5 w-3.5 ${isBridgeConnected ? 'text-indigo-400 animate-pulse' : 'text-slate-500'}`} />
+            <span className="font-medium">{isBridgeConnected ? 'CLI Bridge: Connected' : 'CLI Bridge: Standby'}</span>
           </div>
         </div>
       </header>
 
-      {/* Main Container */}
-      <main className="flex-1 max-w-6xl w-full mx-auto p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Left Column: Status & Registered Tools */}
-        <section className="bg-slate-900/50 border border-slate-800 rounded-xl p-5 flex flex-col gap-4">
-          <div className="flex items-center gap-2 text-slate-200 font-medium">
-            <Bot className="h-4 w-4 text-indigo-400" />
-            <h2>Registered Agent Tools ({registeredTools.length})</h2>
-          </div>
+      {/* Main Workspace Layout */}
+      <main className="flex-1 max-w-7xl w-full mx-auto p-5 grid grid-cols-1 lg:grid-cols-12 gap-5">
+        {/* Left Column: Canvas & Actions (8 cols) */}
+        <section className="lg:col-span-8 flex flex-col gap-4">
+          {/* Quick Action Bar */}
+          <QuickActions
+            onAddNode={handleAddNode}
+            onRunAudit={handleRunAudit}
+            onEstimateCost={handleEstimateCost}
+            onExportTerraform={handleExportTerraform}
+            onLoadTemplate={handleLoadTemplate}
+            totalCost={totalCost}
+          />
 
-          <div className="flex flex-col gap-2">
-            {registeredTools.length === 0 ? (
-              <p className="text-xs text-slate-500 italic">No tools registered yet.</p>
-            ) : (
-              registeredTools.map((tool) => (
-                <div
-                  key={tool}
-                  className="bg-slate-800/60 border border-slate-700/60 rounded-lg p-3 flex items-center justify-between"
-                >
-                  <div>
-                    <p className="text-sm font-mono text-indigo-300">{tool}</p>
-                    <p className="text-xs text-slate-400">Imperative tool</p>
-                  </div>
-                  <button
-                    onClick={handleManualTest}
-                    className="p-1.5 rounded bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-200 border border-indigo-500/30 transition text-xs flex items-center gap-1 cursor-pointer"
-                  >
-                    <Play className="h-3 w-3" />
-                    <span>Test</span>
-                  </button>
-                </div>
-              ))
-            )}
-          </div>
+          {/* Visual Topology Canvas */}
+          <ArchitectureCanvas
+            nodes={state.nodes}
+            connections={state.connections}
+            selectedNodeId={state.selectedNodeId}
+            onSelectNode={(id) => globalStore.selectNode(id)}
+            onDeleteNode={handleDeleteNode}
+          />
 
-          {!hasWebMCP && (
-            <div className="bg-amber-950/30 border border-amber-800/50 rounded-lg p-3 text-xs text-amber-200/90 leading-relaxed">
-              <p className="font-semibold mb-1">To enable WebMCP in Chrome:</p>
-              <ol className="list-decimal list-inside space-y-1 text-amber-300/80">
-                <li>Open <code className="bg-amber-900/50 px-1 py-0.5 rounded">chrome://flags/#enable-webmcp-testing</code></li>
-                <li>Set to <strong>Enabled</strong> and relaunch.</li>
-              </ol>
+          {/* Activity Log (Multi-Agent Feed) */}
+          <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4 flex flex-col gap-2.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-slate-200 font-semibold text-xs uppercase tracking-wider">
+                <Terminal className="h-4 w-4 text-emerald-400" />
+                <h2>Real-Time Multi-Agent Feed</h2>
+              </div>
+              <span className="text-[11px] text-slate-500 font-mono">Live updates from WebMCP & CLI Agents</span>
             </div>
-          )}
-        </section>
 
-        {/* Middle & Right: Workspace & Execution Console */}
-        <section className="md:col-span-2 flex flex-col gap-6">
-          {/* Active Canvas / Workspace Preview */}
-          <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-5">
-            <h2 className="text-sm font-semibold text-slate-200 mb-3">Interactive Workspace</h2>
-            <div className="border border-dashed border-slate-700 rounded-lg p-8 text-center text-slate-400 bg-slate-950/40">
-              <Sparkles className="h-8 w-8 text-slate-600 mx-auto mb-2" />
-              <p className="text-sm">Ready to build your agent-collaborative interface.</p>
-              <p className="text-xs text-slate-500 mt-1">Tools modify application state in real time as the agent invokes them.</p>
-            </div>
-          </div>
-
-          {/* Real-Time Event Log */}
-          <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-5 flex-1 flex flex-col">
-            <div className="flex items-center gap-2 text-slate-200 font-medium mb-3">
-              <Terminal className="h-4 w-4 text-emerald-400" />
-              <h2>Activity Log</h2>
-            </div>
-            <div className="bg-slate-950 rounded-lg p-3 font-mono text-xs text-slate-300 flex-1 overflow-y-auto min-h-[160px] max-h-[260px] border border-slate-800/80 flex flex-col gap-1.5">
-              {logs.length === 0 ? (
-                <span className="text-slate-600 italic">Waiting for events...</span>
+            <div className="bg-slate-950 rounded-lg p-3 font-mono text-xs text-slate-300 min-h-[140px] max-h-[180px] overflow-y-auto border border-slate-800/80 flex flex-col gap-2">
+              {state.logs.length === 0 ? (
+                <span className="text-slate-600 italic">No activity yet.</span>
               ) : (
-                logs.map((log, i) => <div key={i}>{log}</div>)
+                state.logs.map((log, i) => (
+                  <div key={i} className="flex items-start gap-2 leading-relaxed">
+                    <span className="text-slate-600 shrink-0 text-[11px]">{log.timestamp}</span>
+                    <span
+                      className={`text-[9px] uppercase font-bold px-1.5 py-0.2 rounded shrink-0 ${
+                        log.source === 'WebMCP'
+                          ? 'bg-emerald-950 border border-emerald-800 text-emerald-300'
+                          : log.source === 'MCP-Bridge'
+                          ? 'bg-indigo-950 border border-indigo-800 text-indigo-300'
+                          : 'bg-slate-800 border border-slate-700 text-slate-300'
+                      }`}
+                    >
+                      {log.source}
+                    </span>
+                    <span className="text-slate-200 break-words">{log.message}</span>
+                  </div>
+                ))
               )}
             </div>
           </div>
         </section>
+
+        {/* Right Column: Node Inspector & Tool Test Runner (4 cols) */}
+        <section className="lg:col-span-4 flex flex-col gap-4">
+          {/* Node Inspector */}
+          {selectedNode ? (
+            <NodeInspector
+              node={selectedNode}
+              onClose={() => globalStore.selectNode(null)}
+              onUpdate={handleUpdateNode}
+              onDelete={handleDeleteNode}
+            />
+          ) : (
+            <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4 text-center text-slate-500">
+              <Layers className="h-6 w-6 mx-auto mb-1.5 opacity-40" />
+              <p className="text-xs font-medium">Click any node on the canvas to inspect & configure properties.</p>
+            </div>
+          )}
+
+          {/* Registered Tools Directory */}
+          <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4 flex flex-col gap-3">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+              <div className="flex items-center gap-2 text-slate-200 font-semibold text-xs">
+                <Bot className="h-4 w-4 text-indigo-400" />
+                <h2>Exposed Agent Tools ({registeredToolNames.length || tools.length})</h2>
+              </div>
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 font-mono">WebMCP</span>
+            </div>
+
+            <div className="flex flex-col gap-1.5 max-h-[160px] overflow-y-auto pr-1">
+              {tools.map((tool) => (
+                <div
+                  key={tool.name}
+                  onClick={() => setSelectedToolForTest(tool.name)}
+                  className={`p-2 rounded-lg border text-xs cursor-pointer transition flex items-center justify-between ${
+                    selectedToolForTest === tool.name
+                      ? 'border-indigo-500/80 bg-indigo-950/40 text-indigo-200'
+                      : 'border-slate-800 hover:border-slate-700 bg-slate-950/40 text-slate-300'
+                  }`}
+                >
+                  <span className="font-mono text-[11px] truncate">{tool.name}</span>
+                  <span className="text-[10px] text-slate-500">{tool.annotations.readOnlyHint ? 'Read-only' : 'Mutating'}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Test Tool Runner Console */}
+            <div className="pt-2 border-t border-slate-800 flex flex-col gap-2">
+              <div className="flex items-center justify-between text-[11px] text-slate-400">
+                <span className="font-semibold">Test In-App Runner:</span>
+                <span className="font-mono text-indigo-400 truncate max-w-[140px]">{selectedToolForTest}</span>
+              </div>
+
+              <textarea
+                value={testArgumentsJson}
+                onChange={(e) => setTestArgumentsJson(e.target.value)}
+                placeholder='JSON arguments e.g. {"name": "Auth API"}'
+                rows={2}
+                className="w-full bg-slate-950 border border-slate-800 rounded p-2 text-[11px] font-mono text-slate-300 focus:outline-none focus:border-indigo-500"
+              />
+
+              <button
+                onClick={handleExecuteToolTest}
+                className="w-full py-1.5 px-3 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs flex items-center justify-center gap-1.5 transition cursor-pointer shadow-md shadow-indigo-600/20"
+              >
+                <Play className="h-3 w-3 fill-current" />
+                <span>Execute Tool</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Quick Guide Card */}
+          <div className="bg-slate-900/30 border border-slate-800/60 rounded-xl p-3.5 text-xs text-slate-400 flex items-start gap-2.5">
+            <HelpCircle className="h-4 w-4 text-cyan-400 shrink-0 mt-0.5" />
+            <div className="leading-relaxed text-[11px]">
+              <span className="font-semibold text-slate-300">How to use with AI Agents:</span>
+              <p className="mt-1">
+                • <strong>Browser Agents (Chrome / ChatGPT):</strong> Open Model Context Inspector and prompt in plain English (e.g. <em>"Add an auth service and connect it to the gateway"</em>).
+              </p>
+              <p className="mt-1">
+                • <strong>CLI Agents (Claude Code / Codex / Antigravity):</strong> Connect via <code className="bg-slate-800 px-1 py-0.5 rounded text-indigo-300">npm run bridge</code> to control this UI directly from your terminal!
+              </p>
+            </div>
+          </div>
+        </section>
       </main>
+
+      {/* Modals */}
+      <AuditModal
+        isOpen={auditModalOpen}
+        score={auditScore}
+        issues={auditIssues}
+        onClose={() => setAuditModalOpen(false)}
+      />
+
+      <TerraformModal
+        isOpen={terraformModalOpen}
+        code={terraformCode}
+        onClose={() => setTerraformModalOpen(false)}
+      />
     </div>
   );
 }
