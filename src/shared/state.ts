@@ -40,7 +40,7 @@ export interface ArchitectureState {
   nodes: ArchitectureNode[];
   connections: ArchitectureConnection[];
   selectedNodeId: string | null;
-  logs: Array<{ timestamp: string; source: 'WebMCP' | 'MCP-Bridge' | 'UI'; message: string }>;
+  logs: Array<{ timestamp: string; source: 'WebMCP' | 'UI'; message: string }>;
 }
 
 const BASE_COSTS: Record<NodeType, Record<string, number>> = {
@@ -135,7 +135,7 @@ export class ArchitectureStore {
     this.listeners.forEach((listener) => listener(this.getState()));
   }
 
-  addLog(source: 'WebMCP' | 'MCP-Bridge' | 'UI', message: string) {
+  addLog(source: 'WebMCP' | 'UI', message: string) {
     this.state.logs = [
       ...this.state.logs.slice(-25),
       { timestamp: new Date().toLocaleTimeString(), source, message },

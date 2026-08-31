@@ -13,7 +13,6 @@ import {
   AlertTriangle,
   Play,
   Terminal,
-  Radio,
   Layers,
   HelpCircle,
 } from 'lucide-react';
@@ -21,7 +20,6 @@ import {
 export default function App() {
   const [state, setState] = useState<ArchitectureState>(globalStore.getState());
   const [hasWebMCP, setHasWebMCP] = useState(false);
-  const [isBridgeConnected, setIsBridgeConnected] = useState(false);
   const [registeredToolNames, setRegisteredToolNames] = useState<string[]>([]);
   const [selectedToolForTest, setSelectedToolForTest] = useState<string>('run_architecture_security_audit');
   const [testArgumentsJson, setTestArgumentsJson] = useState<string>('{}');
@@ -82,53 +80,6 @@ export default function App() {
       };
     }
   }, [tools]);
-
-  // 3. Connect to Local WebSocket Bridge (for Claude Code / Antigravity / Codex CLI sync)
-  useEffect(() => {
-    let ws: WebSocket | null = null;
-    let reconnectTimeout: any = null;
-
-    function connectWs() {
-      try {
-        ws = new WebSocket('ws://localhost:8765');
-
-        ws.onopen = () => {
-          setIsBridgeConnected(true);
-          globalStore.addLog('MCP-Bridge', 'Connected to External Agent Bridge (Claude Code / Antigravity / Codex)');
-        };
-
-        ws.onmessage = (event) => {
-          try {
-            const data = JSON.parse(event.data);
-            if (data.type === 'STATE_UPDATE' && data.state) {
-              setState(data.state);
-            }
-          } catch (e) {
-            console.error('[WS Parse Error]', e);
-          }
-        };
-
-        ws.onclose = () => {
-          setIsBridgeConnected(false);
-          reconnectTimeout = setTimeout(connectWs, 3000);
-        };
-
-        ws.onerror = () => {
-          setIsBridgeConnected(false);
-        };
-      } catch {
-        setIsBridgeConnected(false);
-        reconnectTimeout = setTimeout(connectWs, 3000);
-      }
-    }
-
-    connectWs();
-
-    return () => {
-      if (ws) ws.close();
-      if (reconnectTimeout) clearTimeout(reconnectTimeout);
-    };
-  }, []);
 
   // UI Actions
   const handleAddNode = (type: NodeType) => {
@@ -213,16 +164,15 @@ export default function App() {
             <div className="flex items-center gap-2">
               <h1 className="text-base font-semibold tracking-tight text-slate-100">WebMCP Architecture Studio</h1>
               <span className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-950 border border-indigo-800 text-indigo-300 font-mono">
-                Dual-Surface Agent Native
+                WebMCP Native
               </span>
             </div>
-            <p className="text-xs text-slate-400">Collaborative Human & Agent Cloud Topology Designer</p>
+            <p className="text-xs text-slate-400">Collaborative Human & AI Agent Cloud Topology Designer</p>
           </div>
         </div>
 
-        {/* Dual Connection Badges */}
+        {/* WebMCP Connection Badge */}
         <div className="flex items-center gap-2.5 text-xs">
-          {/* WebMCP Badge */}
           <div
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border ${
               hasWebMCP
@@ -237,19 +187,6 @@ export default function App() {
               <AlertTriangle className="h-3.5 w-3.5 text-amber-400" />
             )}
             <span className="font-medium">{hasWebMCP ? 'WebMCP (Browser Agent Active)' : 'WebMCP Flag Needed'}</span>
-          </div>
-
-          {/* MCP CLI Bridge Badge */}
-          <div
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border ${
-              isBridgeConnected
-                ? 'bg-indigo-950/50 border-indigo-800/80 text-indigo-300'
-                : 'bg-slate-900 border-slate-800 text-slate-400'
-            }`}
-            title="External CLI Agent WebSocket bridge (Claude Code, Antigravity, Codex)"
-          >
-            <Radio className={`h-3.5 w-3.5 ${isBridgeConnected ? 'text-indigo-400 animate-pulse' : 'text-slate-500'}`} />
-            <span className="font-medium">{isBridgeConnected ? 'CLI Bridge: Connected' : 'CLI Bridge: Standby'}</span>
           </div>
         </div>
       </header>
@@ -277,14 +214,14 @@ export default function App() {
             onDeleteNode={handleDeleteNode}
           />
 
-          {/* Activity Log (Multi-Agent Feed) */}
+          {/* Activity Log Feed */}
           <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4 flex flex-col gap-2.5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-slate-200 font-semibold text-xs uppercase tracking-wider">
                 <Terminal className="h-4 w-4 text-emerald-400" />
-                <h2>Real-Time Multi-Agent Feed</h2>
+                <h2>Real-Time Activity Feed</h2>
               </div>
-              <span className="text-[11px] text-slate-500 font-mono">Live updates from WebMCP & CLI Agents</span>
+              <span className="text-[11px] text-slate-500 font-mono">Live WebMCP tool execution log</span>
             </div>
 
             <div className="bg-slate-950 rounded-lg p-3 font-mono text-xs text-slate-300 min-h-[140px] max-h-[180px] overflow-y-auto border border-slate-800/80 flex flex-col gap-2">
@@ -298,8 +235,6 @@ export default function App() {
                       className={`text-[9px] uppercase font-bold px-1.5 py-0.2 rounded shrink-0 ${
                         log.source === 'WebMCP'
                           ? 'bg-emerald-950 border border-emerald-800 text-emerald-300'
-                          : log.source === 'MCP-Bridge'
-                          ? 'bg-indigo-950 border border-indigo-800 text-indigo-300'
                           : 'bg-slate-800 border border-slate-700 text-slate-300'
                       }`}
                     >
@@ -388,10 +323,7 @@ export default function App() {
             <div className="leading-relaxed text-[11px]">
               <span className="font-semibold text-slate-300">How to use with AI Agents:</span>
               <p className="mt-1">
-                • <strong>Browser Agents (Chrome / ChatGPT):</strong> Open Model Context Inspector and prompt in plain English (e.g. <em>"Add an auth service and connect it to the gateway"</em>).
-              </p>
-              <p className="mt-1">
-                • <strong>CLI Agents (Claude Code / Codex / Antigravity):</strong> Connect via <code className="bg-slate-800 px-1 py-0.5 rounded text-indigo-300">npm run bridge</code> to control this UI directly from your terminal!
+                Open the <strong>Model Context Inspector</strong> extension or ChatGPT in-app browser and prompt in plain English (e.g. <em>"Add an auth service and connect it to the gateway"</em>).
               </p>
             </div>
           </div>

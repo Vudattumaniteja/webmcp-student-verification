@@ -1,6 +1,6 @@
 import { ArchitectureStore, NodeType } from './state.ts';
 
-export type CallerSource = 'WebMCP' | 'MCP-Bridge' | 'UI';
+export type CallerSource = 'WebMCP' | 'UI';
 
 export interface AppToolDefinition {
   name: string;
