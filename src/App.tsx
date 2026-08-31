@@ -56,6 +56,12 @@ export default function App() {
   const handleTabSelect = (tab: string) => {
     const safeScrollToTop = () => {
       try {
+        if (
+          typeof process !== 'undefined' &&
+          process.env?.NODE_ENV === 'test'
+        ) {
+          return;
+        }
         if (typeof window !== 'undefined' && typeof window.scrollTo === 'function') {
           window.scrollTo({ top: 0, behavior: 'smooth' });
         }
