@@ -28,20 +28,24 @@ export type AgentMessageType =
 export interface AgentToolCallInfo {
   name: string;
   title?: string;
-  input?: any;
-  output?: any;
+  input?: Record<string, unknown>;
+  output?: Record<string, unknown> | string;
 }
 
-export interface ConsentData {
+export interface DocumentSummary {
   documentId: string;
   documentTitle?: string;
   docType: string;
-  issuer: string;
   fileName: string;
   fileSizeBytes?: number;
   expirationDate?: string;
+  issuer?: string;
+}
+
+export interface ConsentData extends DocumentSummary {
   verificationId: string;
   merchantId?: string;
+  issuer: string;
 }
 
 export interface RemedyData {
@@ -51,14 +55,7 @@ export interface RemedyData {
   rejectionReason: string;
   remedyText?: string;
   currentDocumentId: string;
-  suggestedDocument: {
-    documentId: string;
-    documentTitle: string;
-    docType: string;
-    fileName: string;
-    fileSizeBytes?: number;
-    expirationDate?: string;
-  };
+  suggestedDocument: DocumentSummary;
 }
 
 export interface ApprovalData {

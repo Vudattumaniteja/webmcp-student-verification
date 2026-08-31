@@ -2,6 +2,7 @@ import {
   DemoPreset,
   DemoPresetId,
   SanitizedDocumentHandle,
+  SanitizedStudentProfile,
   StudentProfile,
   VaultDocument,
   VaultState,
@@ -9,6 +10,86 @@ import {
 import { DEMO_PRESETS, createMockDocumentBlob } from './vaultPresets.ts';
 
 export type VaultListener = (state: VaultState) => void;
+
+const DB_NAME = 'student-vault-db';
+const STORE_NAME = 'document-blobs';
+const DB_VERSION = 1;
+
+async function openVaultDb(): Promise<IDBDatabase | null> {
+  if (typeof indexedDB === 'undefined') {
+    return null;
+  }
+  return new Promise((resolve) => {
+    try {
+      const req = indexedDB.open(DB_NAME, DB_VERSION);
+      req.onupgradeneeded = () => {
+        const db = req.result;
+        if (!db.objectStoreNames.contains(STORE_NAME)) {
+          db.createObjectStore(STORE_NAME);
+        }
+      };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => resolve(null);
+    } catch {
+      resolve(null);
+    }
+  });
+}
+
+async function persistBlobToDb(documentId: string, blob: Blob): Promise<void> {
+  const db = await openVaultDb();
+  if (!db) return;
+  return new Promise((resolve) => {
+    try {
+      const tx = db.transaction(STORE_NAME, 'readwrite');
+      const store = tx.objectStore(STORE_NAME);
+      const req = store.put(blob, documentId);
+      req.onsuccess = () => resolve();
+      req.onerror = () => resolve();
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => resolve();
+    } catch {
+      resolve();
+    }
+  });
+}
+
+async function fetchBlobFromDb(documentId: string): Promise<Blob | null> {
+  const db = await openVaultDb();
+  if (!db) return null;
+  return new Promise((resolve) => {
+    try {
+      const tx = db.transaction(STORE_NAME, 'readonly');
+      const store = tx.objectStore(STORE_NAME);
+      const req = store.get(documentId);
+      req.onsuccess = () => {
+        const result = req.result;
+        resolve(result instanceof Blob ? result : null);
+      };
+      req.onerror = () => resolve(null);
+    } catch {
+      resolve(null);
+    }
+  });
+}
+
+async function deleteBlobFromDb(documentId: string): Promise<void> {
+  const db = await openVaultDb();
+  if (!db) return;
+  return new Promise((resolve) => {
+    try {
+      const tx = db.transaction(STORE_NAME, 'readwrite');
+      const store = tx.objectStore(STORE_NAME);
+      const req = store.delete(documentId);
+      req.onsuccess = () => resolve();
+      req.onerror = () => resolve();
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => resolve();
+    } catch {
+      resolve();
+    }
+  });
+}
 
 export class StudentVault {
   private activePresetId: DemoPresetId | 'CUSTOM';
@@ -23,14 +104,16 @@ export class StudentVault {
     this.profile = { ...preset.profile };
     this.documents = preset.documents.map((d) => ({ ...d }));
 
-    // Populate binary Blobs for the preset documents
+    // Populate binary Blobs for the preset documents and persist to IndexedDB
     this.initPresetBlobs(this.documents);
   }
 
   private initPresetBlobs(docs: VaultDocument[]): void {
     for (const doc of docs) {
       if (!this.binaryStore.has(doc.id)) {
-        this.binaryStore.set(doc.id, createMockDocumentBlob(doc));
+        const blob = createMockDocumentBlob(doc);
+        this.binaryStore.set(doc.id, blob);
+        void persistBlobToDb(doc.id, blob);
       }
     }
   }
@@ -47,7 +130,7 @@ export class StudentVault {
     return { ...this.profile };
   }
 
-  public getSanitizedProfile(): Record<string, any> {
+  public getSanitizedProfile(): SanitizedStudentProfile {
     return {
       firstName: this.profile.firstName,
       lastName: this.profile.lastName,
@@ -90,7 +173,16 @@ export class StudentVault {
   }
 
   public async getDocumentBlob(documentId: string): Promise<Blob | null> {
-    return this.binaryStore.get(documentId) || null;
+    const memoryBlob = this.binaryStore.get(documentId);
+    if (memoryBlob) {
+      return memoryBlob;
+    }
+    const dbBlob = await fetchBlobFromDb(documentId);
+    if (dbBlob) {
+      this.binaryStore.set(documentId, dbBlob);
+      return dbBlob;
+    }
+    return null;
   }
 
   public getDocumentBlobSync(documentId: string): Blob | null {
@@ -99,6 +191,7 @@ export class StudentVault {
 
   public async storeDocumentBlob(documentId: string, blob: Blob): Promise<void> {
     this.binaryStore.set(documentId, blob);
+    await persistBlobToDb(documentId, blob);
   }
 
   public switchPreset(presetId: DemoPresetId): void {
@@ -148,6 +241,7 @@ export class StudentVault {
 
     this.documents.push(newDoc);
     this.binaryStore.set(customId, blob);
+    await persistBlobToDb(customId, blob);
     this.notify();
     return newDoc;
   }
@@ -156,6 +250,7 @@ export class StudentVault {
     const initialLen = this.documents.length;
     this.documents = this.documents.filter((d) => d.id !== documentId);
     this.binaryStore.delete(documentId);
+    void deleteBlobFromDb(documentId);
 
     if (this.documents.length !== initialLen) {
       this.notify();

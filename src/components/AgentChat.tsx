@@ -24,6 +24,7 @@ import {
   ChevronRight,
   Loader2,
   Terminal,
+  type LucideIcon,
 } from 'lucide-react';
 
 interface AgentChatProps {
@@ -34,7 +35,7 @@ interface AgentChatProps {
 interface TimelineStep {
   key: string;
   label: string;
-  icon: any;
+  icon: LucideIcon | React.ComponentType<{ className?: string }>;
   status: 'pending' | 'active' | 'completed' | 'error';
 }
 

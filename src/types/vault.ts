@@ -67,20 +67,32 @@ export interface VaultState {
   documents: VaultDocument[];
 }
 
+export interface SanitizedStudentProfile {
+  firstName: string;
+  lastName: string;
+  fullName: string;
+  email: string;
+  birthDate: string;
+  universityId: string;
+  universityName: string;
+  academicLevel: AcademicLevel;
+  graduationYear: number;
+}
+
 export interface WebMCPToolAnnotation {
   readOnlyHint: boolean;
   untrustedContentHint: boolean;
 }
 
-export interface WebMCPToolDefinition {
+export interface WebMCPToolDefinition<TInput = any> {
   name: string;
   title: string;
   description: string;
   inputSchema: {
     type: 'object';
-    properties: Record<string, any>;
+    properties: Record<string, unknown>;
     required?: string[];
   };
   annotations: WebMCPToolAnnotation;
-  execute: (input: any) => Promise<string>;
+  execute: (input: TInput) => Promise<string>;
 }

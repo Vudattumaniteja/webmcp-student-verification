@@ -1,10 +1,9 @@
 import { useState, useEffect, useMemo } from 'react';
-import { globalStore, ArchitectureState, NodeType, SecurityIssue } from './shared/state.ts';
+import { globalStore, ArchitectureState, NodeType, SecurityIssue, ArchitectureNode } from './shared/state.ts';
 import { createArchitectureTools } from './shared/tools.ts';
 import { globalVault } from './services/vault.ts';
-import { createVaultTools } from './services/vaultTools.ts';
 import { globalVerificationEngine } from './services/verificationEngine.ts';
-import { createVerificationTools } from './tools/verificationTools.ts';
+import { createAllWebMCPTools } from './tools/index.ts';
 import { globalMerchantStore } from './services/merchantStore.ts';
 import { globalAgentController } from './services/agentController.ts';
 import VaultManager from './components/VaultManager.tsx';
@@ -44,30 +43,11 @@ export default function App() {
   const [terraformCode, setTerraformCode] = useState('');
 
   const archTools = useMemo(() => createArchitectureTools(), []);
-  const vaultTools = useMemo(() => createVaultTools(globalVault), []);
-  const verificationTools = useMemo(() => createVerificationTools(globalVerificationEngine), []);
+  const webmcpTools = useMemo(() => createAllWebMCPTools(globalVerificationEngine, globalVault, globalStore), []);
 
   const allTools = useMemo(() => {
-    return [
-      ...verificationTools.map((vt) => ({
-        ...vt,
-        execute: async (input: any, _store?: any, callerSource: 'WebMCP' | 'UI' = 'WebMCP') => {
-          const res = await vt.execute(input);
-          globalStore.addLog(callerSource, `[${vt.name}] ${res}`);
-          return res;
-        },
-      })),
-      ...vaultTools.map((vt) => ({
-        ...vt,
-        execute: async (input: any, _store?: any, callerSource: 'WebMCP' | 'UI' = 'WebMCP') => {
-          const res = await vt.execute(input);
-          globalStore.addLog(callerSource, `[${vt.name}] ${res}`);
-          return res;
-        },
-      })),
-      ...archTools,
-    ];
-  }, [archTools, vaultTools, verificationTools]);
+    return [...webmcpTools, ...archTools];
+  }, [webmcpTools, archTools]);
 
   // 1. Subscribe to Store State Updates
   useEffect(() => {
@@ -144,7 +124,7 @@ export default function App() {
     globalStore.addLog('UI', `Manually added ${type} component`);
   };
 
-  const handleUpdateNode = (id: string, updates: any) => {
+  const handleUpdateNode = (id: string, updates: Partial<ArchitectureNode>) => {
     globalStore.updateNode(id, updates);
   };
 
@@ -187,8 +167,9 @@ export default function App() {
       const parsedArgs = JSON.parse(testArgumentsJson || '{}');
       const result = await target.execute(parsedArgs, globalStore, 'UI');
       globalStore.addLog('UI', `Ran tool test "${target.name}": ${typeof result === 'string' ? result : JSON.stringify(result)}`);
-    } catch (e: any) {
-      alert(`Execution Error: ${e.message}`);
+    } catch (e: unknown) {
+      const errMsg = e instanceof Error ? e.message : String(e);
+      alert(`Execution Error: ${errMsg}`);
     }
   };
 

@@ -126,4 +126,32 @@ describe('WebMCP document.modelContext Registration', () => {
     expect(parsedStatusAfter.status).toBe('APPROVED');
     expect(parsedStatusAfter.rewardCode).toBe(parsedUpload.rewardCode);
   });
+
+  it('should create and wrap the 7 primary WebMCP tools with activity logging', async () => {
+    const { createAllWebMCPTools } = await import('./index');
+    const { ArchitectureStore } = await import('../shared/state');
+    const mockStore = new ArchitectureStore();
+    const vault = new StudentVault('STANFORD_VALID');
+    const wrappedTools = createAllWebMCPTools(globalVerificationEngine, vault, mockStore);
+
+    expect(wrappedTools.length).toBe(7);
+    const toolNames = wrappedTools.map((t) => t.name);
+    expect(toolNames).toEqual([
+      'search_school',
+      'submit_student_verification',
+      'upload_vault_document',
+      'check_verification_status',
+      'get_student_vault_profile',
+      'list_vault_documents',
+      'switch_demo_preset',
+    ]);
+
+    // Test execution logs to mockStore
+    const profileTool = wrappedTools.find((t) => t.name === 'get_student_vault_profile')!;
+    const res = await profileTool.execute({}, mockStore, 'WebMCP');
+    expect(res).toContain('Alex');
+    const webmcpLogs = mockStore.getState().logs.filter((l) => l.source === 'WebMCP');
+    expect(webmcpLogs.length).toBeGreaterThanOrEqual(1);
+    expect(webmcpLogs[webmcpLogs.length - 1].message).toContain('[get_student_vault_profile]');
+  });
 });

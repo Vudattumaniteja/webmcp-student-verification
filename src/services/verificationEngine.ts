@@ -44,6 +44,11 @@ export interface VerificationResult {
   message: string;
 }
 
+export interface StagedDocument {
+  blob: Blob;
+  metadata?: DocumentEvaluationInput;
+}
+
 export interface VerificationSession {
   verificationId: string;
   schoolId: string;
@@ -62,6 +67,7 @@ export interface VerificationSession {
   uploadToken?: string;
   allowedDocTypes?: string[];
   uploadedDocumentId?: string;
+  stagedDocument?: StagedDocument;
   rejectionCode?: RejectionCode | string;
   rejectionReason?: string;
   remedyText?: string;
@@ -73,11 +79,15 @@ export interface DocumentEvaluationInput {
   id?: string;
   docType?: string;
   fileName?: string;
+  mimeType?: string;
+  fileSizeBytes?: number;
   expirationDate?: string;
   issueDate?: string;
   isValid?: boolean;
   isIllegible?: boolean;
-  [key: string]: any;
+  title?: string;
+  description?: string;
+  previewText?: string;
 }
 
 const ALLOWED_DOCUMENT_TYPES = [
@@ -192,96 +202,18 @@ export class VerificationEngine {
       throw new Error(`Verification session not found for ID "${verificationId}"`);
     }
 
-    if (!docBlob || typeof (docBlob as any).size !== 'number' || (docBlob as any).size === 0) {
+    if (!docBlob || typeof docBlob.size !== 'number' || docBlob.size === 0) {
       throw new Error('Valid document binary Blob is required');
     }
 
-    const school = getSchoolById(session.schoolId);
     const now = new Date().toISOString();
-
-    // 1. Evaluate image legibility and resolution
-    const isIllegible =
-      docMetadata?.isIllegible === true ||
-      docMetadata?.id === 'doc_berk_blurry_id' ||
-      (docMetadata?.id && docMetadata.id.toLowerCase().includes('blurry')) ||
-      (docMetadata?.id && docMetadata.id.toLowerCase().includes('illegible'));
-
-    if (isIllegible) {
-      const rejectionCode: RejectionCode = 'ILLEGIBLE_DOCUMENT';
-      const rejectionReason = 'Image resolution too low.';
-      const remedyText = 'Please submit an official PDF transcript.';
-
-      session.status = 'REJECTED';
-      session.currentStep = 'docUpload';
-      session.uploadedDocumentId = docMetadata?.id;
-      session.rejectionCode = rejectionCode;
-      session.rejectionReason = rejectionReason;
-      session.remedyText = remedyText;
-      session.rewardCode = undefined;
-      session.updatedAt = now;
-
-      return {
-        verificationId,
-        status: 'REJECTED',
-        currentStep: 'docUpload',
-        rejectionCode,
-        rejectionReason,
-        remedyText,
-        message: `Document rejected: ${rejectionReason} ${remedyText}`,
-      };
-    }
-
-    // 2. Evaluate document expiration
-    const isExpired =
-      docMetadata?.id === 'doc_harv_id_2024' ||
-      (docMetadata?.id && docMetadata.id.toLowerCase().includes('expired')) ||
-      (docMetadata?.expirationDate && new Date(docMetadata.expirationDate).getTime() < new Date('2025-01-01').getTime()) ||
-      (docMetadata?.isValid === false && !docMetadata?.isIllegible);
-
-    if (isExpired) {
-      const rejectionCode: RejectionCode = 'EXPIRED_DOCUMENT';
-      const rejectionReason = 'Your student ID is expired.';
-      const remedyText = 'Please submit a current term tuition receipt or transcript.';
-
-      session.status = 'REJECTED';
-      session.currentStep = 'docUpload';
-      session.uploadedDocumentId = docMetadata?.id;
-      session.rejectionCode = rejectionCode;
-      session.rejectionReason = rejectionReason;
-      session.remedyText = remedyText;
-      session.rewardCode = undefined;
-      session.updatedAt = now;
-
-      return {
-        verificationId,
-        status: 'REJECTED',
-        currentStep: 'docUpload',
-        rejectionCode,
-        rejectionReason,
-        remedyText,
-        message: `Document rejected: ${rejectionReason} ${remedyText}`,
-      };
-    }
-
-    // 3. Document is valid -> transition PENDING -> APPROVED
-    const rewardCode = this.generateRewardCode(session.merchantId, school);
-
-    session.status = 'APPROVED';
-    session.currentStep = 'completed';
+    session.stagedDocument = { blob: docBlob, metadata: docMetadata };
     session.uploadedDocumentId = docMetadata?.id;
-    session.rewardCode = rewardCode;
-    session.rejectionCode = undefined;
-    session.rejectionReason = undefined;
-    session.remedyText = undefined;
+    session.status = 'PENDING';
+    session.currentStep = 'pendingReview';
     session.updatedAt = now;
 
-    return {
-      verificationId,
-      status: 'APPROVED',
-      currentStep: 'completed',
-      rewardCode,
-      message: 'Document verified successfully. Student discount reward code unlocked.',
-    };
+    return this.completeDocUpload(verificationId, docMetadata);
   }
 
   simulateDirectPut(
@@ -332,37 +264,93 @@ export class VerificationEngine {
       };
     }
 
-    if (session.status === 'REJECTED') {
+    const effectiveMetadata = docMetadata || session.stagedDocument?.metadata;
+    const now = new Date().toISOString();
+    const school = getSchoolById(session.schoolId);
+
+    // 1. Evaluate image legibility and resolution
+    const isIllegible =
+      effectiveMetadata?.isIllegible === true ||
+      effectiveMetadata?.id === 'doc_berk_blurry_id' ||
+      (typeof effectiveMetadata?.id === 'string' && effectiveMetadata.id.toLowerCase().includes('blurry')) ||
+      (typeof effectiveMetadata?.id === 'string' && effectiveMetadata.id.toLowerCase().includes('illegible'));
+
+    if (isIllegible) {
+      const rejectionCode: RejectionCode = 'ILLEGIBLE_DOCUMENT';
+      const rejectionReason = 'Image resolution too low.';
+      const remedyText = 'Please submit an official PDF transcript.';
+
+      session.status = 'REJECTED';
+      session.currentStep = 'docUpload';
+      session.uploadedDocumentId = effectiveMetadata?.id;
+      session.rejectionCode = rejectionCode;
+      session.rejectionReason = rejectionReason;
+      session.remedyText = remedyText;
+      session.rewardCode = undefined;
+      session.updatedAt = now;
+
       return {
         verificationId,
-        status: session.status,
-        currentStep: session.currentStep,
-        rejectionCode: session.rejectionCode,
-        rejectionReason: session.rejectionReason,
-        remedyText: session.remedyText,
-        message: `Verification rejected: ${session.rejectionReason}`,
+        status: 'REJECTED',
+        currentStep: 'docUpload',
+        rejectionCode,
+        rejectionReason,
+        remedyText,
+        message: `Document rejected: ${rejectionReason} ${remedyText}`,
       };
     }
 
-    // Default completion if in pendingReview or docUpload with valid doc
-    if (docMetadata) {
-      const mockBlob = new Blob(['HANDSHAKE_COMPLETED_DATA'], { type: 'application/octet-stream' });
-      return this.uploadDocumentDirect(verificationId, mockBlob, docMetadata);
+    // 2. Evaluate document expiration
+    const isExpired =
+      effectiveMetadata?.id === 'doc_harv_id_2024' ||
+      (typeof effectiveMetadata?.id === 'string' && effectiveMetadata.id.toLowerCase().includes('expired')) ||
+      (typeof effectiveMetadata?.expirationDate === 'string' &&
+        new Date(effectiveMetadata.expirationDate).getTime() < new Date('2025-01-01').getTime()) ||
+      (effectiveMetadata?.isValid === false && !effectiveMetadata?.isIllegible);
+
+    if (isExpired) {
+      const rejectionCode: RejectionCode = 'EXPIRED_DOCUMENT';
+      const rejectionReason = 'Your student ID is expired.';
+      const remedyText = 'Please submit a current term tuition receipt or transcript.';
+
+      session.status = 'REJECTED';
+      session.currentStep = 'docUpload';
+      session.uploadedDocumentId = effectiveMetadata?.id;
+      session.rejectionCode = rejectionCode;
+      session.rejectionReason = rejectionReason;
+      session.remedyText = remedyText;
+      session.rewardCode = undefined;
+      session.updatedAt = now;
+
+      return {
+        verificationId,
+        status: 'REJECTED',
+        currentStep: 'docUpload',
+        rejectionCode,
+        rejectionReason,
+        remedyText,
+        message: `Document rejected: ${rejectionReason} ${remedyText}`,
+      };
     }
 
-    const school = getSchoolById(session.schoolId);
+    // 3. Document is valid -> transition PENDING -> APPROVED
     const rewardCode = this.generateRewardCode(session.merchantId, school);
+
     session.status = 'APPROVED';
     session.currentStep = 'completed';
+    session.uploadedDocumentId = effectiveMetadata?.id;
     session.rewardCode = rewardCode;
-    session.updatedAt = new Date().toISOString();
+    session.rejectionCode = undefined;
+    session.rejectionReason = undefined;
+    session.remedyText = undefined;
+    session.updatedAt = now;
 
     return {
       verificationId,
       status: 'APPROVED',
       currentStep: 'completed',
       rewardCode,
-      message: 'Document review completed and approved.',
+      message: 'Document verified successfully. Student discount reward code unlocked.',
     };
   }
 
@@ -379,14 +367,19 @@ export class VerificationEngine {
   }
 
   private checkInstantEligibility(school: School, email: string): boolean {
-    if (school.instantMatchEligible) {
-      return true;
+    if (!school.instantMatchEligible) {
+      return false;
     }
-    const domain = email.toLowerCase().split('@')[1];
-    if (domain && school.domain.toLowerCase() === domain && school.instantMatchEligible) {
-      return true;
+    if (!email || typeof email !== 'string') {
+      return false;
     }
-    return false;
+    const emailParts = email.toLowerCase().trim().split('@');
+    if (emailParts.length !== 2) {
+      return false;
+    }
+    const emailDomain = emailParts[1].trim();
+    const schoolDomain = school.domain.toLowerCase().trim();
+    return emailDomain === schoolDomain || emailDomain.endsWith(`.${schoolDomain}`);
   }
 
   private generateRewardCode(merchantId?: string, _school?: School): string {

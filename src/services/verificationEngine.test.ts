@@ -56,6 +56,21 @@ describe('Verification Provider Engine', () => {
       expect(resultSpotify.rewardCode).toContain('SPOTIFY');
       expect(resultAws.rewardCode).toContain('AWS');
     });
+
+    it('should require docUpload if email domain does not match accredited school domain even for instant-eligible institutions', () => {
+      const result = engine.submitPersonalInfo({
+        schoolId: 'sch_mit_001',
+        firstName: 'Elena',
+        lastName: 'Rostova',
+        email: 'elena.rostova@gmail.com',
+        merchantId: 'spotify_premium',
+      });
+
+      expect(result.status).toBe('PENDING_DOCS');
+      expect(result.currentStep).toBe('docUpload');
+      expect(result.rewardCode).toBeUndefined();
+      expect(result.uploadUrl).toBeDefined();
+    });
   });
 
   describe('collectStudentPersonalInfo - Document Fallback', () => {

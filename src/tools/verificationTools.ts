@@ -1,21 +1,29 @@
 import { searchSchools } from '../services/schoolSearch';
 import { VerificationEngine, globalVerificationEngine } from '../services/verificationEngine';
 import { StudentVault, globalVault } from '../services/vault';
+import { WebMCPToolDefinition } from '../types/vault';
 
-export interface WebMCPToolDefinition {
-  name: string;
-  title: string;
-  description: string;
-  inputSchema: {
-    type: 'object';
-    properties: Record<string, any>;
-    required?: string[];
-  };
-  annotations: {
-    readOnlyHint: boolean;
-    untrustedContentHint: boolean;
-  };
-  execute: (input: any) => Promise<string>;
+export interface SearchSchoolInput {
+  query?: string;
+  limit?: number;
+}
+
+export interface SubmitStudentVerificationInput {
+  schoolId: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  birthDate?: string;
+  merchantId?: string;
+}
+
+export interface UploadVaultDocumentInput {
+  verificationId: string;
+  documentId: string;
+}
+
+export interface CheckVerificationStatusInput {
+  verificationId: string;
 }
 
 export function createVerificationTools(
@@ -154,9 +162,10 @@ export function createVerificationTools(
             allowedDocTypes: result.allowedDocTypes,
             message: result.message,
           });
-        } catch (err: any) {
+        } catch (err: unknown) {
+          const message = err instanceof Error ? err.message : 'Verification submission failed';
           return JSON.stringify({
-            error: err.message || 'Verification submission failed',
+            error: message,
           });
         }
       },
@@ -228,9 +237,10 @@ export function createVerificationTools(
             rejectionReason: result.rejectionReason,
             remedyText: result.remedyText,
           });
-        } catch (err: any) {
+        } catch (err: unknown) {
+          const message = err instanceof Error ? err.message : 'Document upload failed';
           return JSON.stringify({
-            error: err.message || 'Document upload failed',
+            error: message,
           });
         }
       },
@@ -270,7 +280,7 @@ export function createVerificationTools(
             });
           }
 
-          const responsePayload: Record<string, any> = {
+          const responsePayload: Record<string, unknown> = {
             verificationId: session.verificationId,
             status: session.status,
             currentStep: session.currentStep,
@@ -299,9 +309,10 @@ export function createVerificationTools(
           }
 
           return JSON.stringify(responsePayload);
-        } catch (err: any) {
+        } catch (err: unknown) {
+          const message = err instanceof Error ? err.message : 'Status check failed';
           return JSON.stringify({
-            error: err.message || 'Status check failed',
+            error: message,
           });
         }
       },

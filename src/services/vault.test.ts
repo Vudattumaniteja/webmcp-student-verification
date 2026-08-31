@@ -34,7 +34,7 @@ describe('Student Document Vault & Demo Presets (Ticket #3)', () => {
 
     it('configures STANFORD_VALID with valid ID and class schedule', () => {
       const stanford = DEMO_PRESETS.STANFORD_VALID;
-      expect(stanford.profile.universityId).toBe('school_stanford_01');
+      expect(stanford.profile.universityId).toBe('sch_stanford_002');
       expect(stanford.documents.length).toBe(2);
 
       const idDoc = stanford.documents.find((d) => d.docType === 'STUDENT_ID')!;
@@ -196,6 +196,14 @@ describe('Student Document Vault & Demo Presets (Ticket #3)', () => {
       const retrievedBlob = await vault.getDocumentBlob(addedDoc.id);
       expect(retrievedBlob).not.toBeNull();
       expect(retrievedBlob!.type).toBe('application/pdf');
+    });
+
+    it('stores and retrieves binary blobs via storeDocumentBlob', async () => {
+      const testBlob = new Blob(['TEST_BLOB_CONTENT'], { type: 'text/plain' });
+      await vault.storeDocumentBlob('doc_test_blob', testBlob);
+      const retrieved = await vault.getDocumentBlob('doc_test_blob');
+      expect(retrieved).not.toBeNull();
+      expect(retrieved?.size).toBe(testBlob.size);
     });
 
     it('removes a document by handle ID', () => {
